@@ -2,6 +2,19 @@
 
 Telegram bot panel. **grammY** kutubxonasi asosida (Telegraf'ning zamonaviy davomchisi). Node.js + ES Modules.
 
+## Domen va asosiy foydalanuvchi
+
+**Temur PUBGM** — PUBG Mobile turnirlari platformasi. Bot asosan **`player`** rolidagi foydalanuvchilar uchun ishlaydi (web panel emas, Telegram interfeysi).
+
+Tipik player flow:
+1. `/start` → ro'yxatdan o'tish (PUBG ID, in-game nickname, telefon).
+2. Mavjud turnirlarni ko'rish, ro'yxatdan o'tish.
+3. Komandasi (agar leader qo'shgan bo'lsa) va statusni ko'rish.
+4. Turnir boshlanishidan oldin room ID + parolni qabul qilish.
+5. Natijalar va o'z statistikasini ko'rish.
+
+Leader/admin uchun ham yengil komandalar bo'lishi mumkin (xabarnoma, tasdiqlash), lekin to'liq boshqaruv — frontend panellarda.
+
 ## Folder structure
 
 ```
