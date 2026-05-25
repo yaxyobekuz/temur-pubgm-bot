@@ -31,7 +31,7 @@ const slotLabel = (slot) => {
   return "·";
 };
 
-// Roster picker — har a'zoga 3 ta toggle tugma: Asosiy, Zaxira, Yo'q
+// Roster picker - har a'zoga 3 ta toggle tugma: Asosiy, Zaxira, Yo'q
 export const buildRosterPickerKeyboard = (members = [], slots = {}, canSubmit = false) => {
   const kb = new InlineKeyboard();
   for (const m of members) {
@@ -47,7 +47,7 @@ export const buildRosterPickerKeyboard = (members = [], slots = {}, canSubmit = 
   return kb;
 };
 
-// Sponsor channel rejection — har bir kanal uchun URL tugma.
+// Sponsor channel rejection - har bir kanal uchun URL tugma.
 export const buildSponsorChannelsKeyboard = (channels = []) => {
   const kb = new InlineKeyboard();
   for (const c of channels) {

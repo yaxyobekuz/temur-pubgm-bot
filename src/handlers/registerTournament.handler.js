@@ -23,7 +23,7 @@ const buildStatusText = (tournament, members, slots) => {
   const main = Object.values(slots).filter((s) => s === "main").length;
   const reserve = Object.values(slots).filter((s) => s === "reserve").length;
   return [
-    `📝 <b>${tournament.title}</b> — ro'yxatdan o'tish`,
+    `📝 <b>${tournament.title}</b> - ro'yxatdan o'tish`,
     "",
     `Rejim: <b>${tournament.mode}</b> (aynan <b>${required}</b> ta asosiy o'yinchi kerak)`,
     `Tanlangan asosiy: <b>${main}/${required}</b> • Zaxira: <b>${reserve}</b>`,
@@ -130,7 +130,7 @@ export const registerTournamentConversation = async (conversation, ctx) => {
         await ctx.reply("Kabinet:", { reply_markup: cabinetKeyboard });
       } catch (err) {
         const data = err?.response?.data;
-        // Sponsor channel rejection — details = [{title,url}, ...]
+        // Sponsor channel rejection - details = [{title,url}, ...]
         if (Array.isArray(data?.details) && data.details.length) {
           await update.answerCallbackQuery({
             text: "Avval kanallarga obuna bo'ling",
@@ -178,7 +178,7 @@ export const registerTournamentConversation = async (conversation, ctx) => {
         { parse_mode: "HTML", reply_markup: renderKeyboard() },
       );
     } catch {
-      // Edit fail (e.g. xabar o'zgarmagan) — jim qoldiramiz.
+      // Edit fail (e.g. xabar o'zgarmagan) - jim qoldiramiz.
     }
   }
 };

@@ -17,7 +17,7 @@ const STATUS_LABELS = {
 };
 
 const formatDate = (iso) => {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleString("uz-UZ", {
     year: "numeric",
     month: "2-digit",
@@ -32,7 +32,7 @@ const formatTournamentCard = (t) => {
     `🏆 <b>${t.title}</b>`,
     "",
     `Rejim: <b>${MODE_LABELS[t.mode] || t.mode}</b>`,
-    `Mintaqa: ${t.region?.name || "—"}`,
+    `Mintaqa: ${t.region?.name || "-"}`,
     `Boshlanish: ${formatDate(t.startDate)}`,
     t.prizePool ? `Mukofot: <b>${t.prizePool}</b>` : null,
     t.maxTeams ? `Maks. komandalar: ${t.maxTeams}` : null,
@@ -80,7 +80,7 @@ export const handleTournamentDetail = async (ctx) => {
   const id = ctx.callbackQuery.data.split(":")[1];
   if (id === "back") {
     await ctx.answerCallbackQuery();
-    // List'ni qayta ko'rsatish — eski xabarni edit qilamiz.
+    // List'ni qayta ko'rsatish - eski xabarni edit qilamiz.
     try {
       const items = await listOpenTournaments();
       await ctx.editMessageText("Ochiq turnirlar:", {
@@ -121,7 +121,7 @@ export const handleTournamentDetail = async (ctx) => {
   }
 };
 
-// "noop" callback — placeholder tugmalar uchun (faqat acknowledge).
+// "noop" callback - placeholder tugmalar uchun (faqat acknowledge).
 export const handleNoopCallback = async (ctx) => {
   await ctx.answerCallbackQuery();
 };
@@ -148,7 +148,7 @@ export const showMyRegistrations = async (ctx) => {
   for (const r of items) {
     const tName = r.tournament?.title || "Turnir";
     const status = STATUS_LABELS[r.status] || r.status;
-    lines.push(`• <b>${tName}</b> — ${status}`);
+    lines.push(`• <b>${tName}</b> - ${status}`);
     if (r.tournament?.startDate) {
       lines.push(`   ${formatDate(r.tournament.startDate)}`);
     }
