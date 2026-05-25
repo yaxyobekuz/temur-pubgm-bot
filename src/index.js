@@ -37,9 +37,10 @@ import {
   showMyRegistrations,
 } from "./handlers/tournaments.handler.js";
 import {
-  registerTournamentConversation,
-  REGISTER_TOURNAMENT_CONVERSATION,
   handleStartRegister,
+  handleSlotToggle,
+  handleRosterCancel,
+  handleRosterSubmit,
 } from "./handlers/registerTournament.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
@@ -49,18 +50,12 @@ bot.use(
     initial: () => ({
       await: null,
       pendingInvite: null,
-      pendingRegisterTournamentId: null,
+      roster: null,
     }),
   }),
 );
 bot.use(conversations());
 bot.use(createConversation(registerConversation, REGISTER_CONVERSATION));
-bot.use(
-  createConversation(
-    registerTournamentConversation,
-    REGISTER_TOURNAMENT_CONVERSATION,
-  ),
-);
 bot.use(authContext);
 
 // Pending free-text inputs (team name, rename) - runs before generic handlers.
@@ -91,6 +86,9 @@ bot.callbackQuery(/^role:/, handleRoleCallback);
 bot.callbackQuery(/^kick:/, handleKickCallback);
 bot.callbackQuery(/^tour:/, handleTournamentDetail);
 bot.callbackQuery(/^register:/, handleStartRegister);
+bot.callbackQuery(/^slot:/, handleSlotToggle);
+bot.callbackQuery("roster:cancel", handleRosterCancel);
+bot.callbackQuery("roster:submit", handleRosterSubmit);
 bot.callbackQuery("noop", handleNoopCallback);
 
 bot.catch(errorHandler);
