@@ -1,7 +1,23 @@
 import express from "express";
 import crypto from "node:crypto";
+import { InputFile } from "grammy";
 import { env } from "../config/env.js";
 import logger from "../config/logger.js";
+
+// API_BASE_URL "http://host:5000/api" → "http://host:5000". Static fayllar `/api` ostida emas.
+const SERVER_ORIGIN = env.API_BASE_URL.replace(/\/api\/?$/, "");
+
+// Telegram sendPhoto tashqi URL'lardan o'qiy oladi, lekin localhost ko'rinmaydi.
+// Shu sabab nisbiy `/uploads/...` yo'lni bot serverdan stream qilib oladi va InputFile sifatida yuboradi.
+const fetchMediaAsInputFile = async (mediaUrl) => {
+  const isAbsolute = /^https?:\/\//i.test(mediaUrl);
+  const url = isAbsolute ? mediaUrl : `${SERVER_ORIGIN}${mediaUrl.startsWith("/") ? "" : "/"}${mediaUrl}`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`media fetch failed: ${resp.status}`);
+  const buf = Buffer.from(await resp.arrayBuffer());
+  const name = url.split("/").pop()?.split("?")[0] || "photo";
+  return new InputFile(buf, name);
+};
 
 const safeEqual = (a, b) => {
   if (typeof a !== "string" || typeof b !== "string") return false;
@@ -73,7 +89,8 @@ export const createBotInternalServer = (bot) => {
     try {
       let messageId;
       if (mediaUrl) {
-        const sent = await bot.api.sendPhoto(chatId, mediaUrl, {
+        const photo = await fetchMediaAsInputFile(mediaUrl);
+        const sent = await bot.api.sendPhoto(chatId, photo, {
           caption: text || undefined,
           ...opts,
         });
@@ -84,7 +101,7 @@ export const createBotInternalServer = (bot) => {
       }
       res.json({ success: true, data: { messageId } });
     } catch (err) {
-      logger.warn({ err: err.message, chatId }, "send-message failed");
+      logger.warn({ err: err.message, chatId, mediaUrl }, "send-message failed");
       res
         .status(502)
         .json({ success: false, message: err.message || "Send failed" });
