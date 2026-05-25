@@ -1,28 +1,104 @@
-import { Bot } from "grammy";
+import { Bot, session } from "grammy";
 import { run } from "@grammyjs/runner";
+import { conversations, createConversation } from "@grammyjs/conversations";
 
 import { env } from "./config/env.js";
 import logger from "./config/logger.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { authContext } from "./middlewares/authContext.js";
+import { startBotInternalServer } from "./server/botInternal.server.js";
 
 import startHandler from "./handlers/start.handler.js";
 import helpHandler from "./handlers/help.handler.js";
+import {
+  registerConversation,
+  REGISTER_CONVERSATION,
+} from "./handlers/register.handler.js";
+import { profileHandler, showCabinet } from "./handlers/cabinet.handler.js";
+import {
+  askRoleSwitch,
+  handleRoleCallback,
+} from "./handlers/roleSwitch.handler.js";
+import {
+  showTeam,
+  startCreateTeam,
+  startRenameTeam,
+  startKickMember,
+  handleKickCallback,
+  handleRegenerateInvite,
+  handleShowInvite,
+  handleLeaveTeam,
+  handlePendingTextInput,
+} from "./handlers/team.handler.js";
+import {
+  showOpenTournaments,
+  handleTournamentDetail,
+  handleNoopCallback,
+  showMyRegistrations,
+} from "./handlers/tournaments.handler.js";
+import {
+  registerTournamentConversation,
+  REGISTER_TOURNAMENT_CONVERSATION,
+  handleStartRegister,
+} from "./handlers/registerTournament.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
+
+bot.use(
+  session({
+    initial: () => ({
+      await: null,
+      pendingInvite: null,
+      pendingRegisterTournamentId: null,
+    }),
+  }),
+);
+bot.use(conversations());
+bot.use(createConversation(registerConversation, REGISTER_CONVERSATION));
+bot.use(
+  createConversation(
+    registerTournamentConversation,
+    REGISTER_TOURNAMENT_CONVERSATION,
+  ),
+);
+bot.use(authContext);
+
+// Pending free-text inputs (team name, rename) - runs before generic handlers.
+bot.on("message:text", handlePendingTextInput);
 
 bot.command("start", startHandler);
 bot.command("help", helpHandler);
 
-bot.hears("Yordam", helpHandler);
-bot.hears("Profil", async (ctx) => {
-  await ctx.reply("Profil tez orada qo'shiladi.");
-});
+// Cabinet menu
+bot.hears("👤 Profil", profileHandler);
+bot.hears("🔁 Rolni almashtirish", askRoleSwitch);
+bot.hears("👥 Mening komandam", showTeam);
+bot.hears("🏆 Turnirlar", showOpenTournaments);
+bot.hears("📋 Mening turnirlarim", showMyRegistrations);
+bot.hears("ℹ️ Yordam", helpHandler);
+
+// Team submenu
+bot.hears("📛 Komanda nomini o'zgartirish", startRenameTeam);
+bot.hears("🔗 Taklif havolasi", handleShowInvite);
+bot.hears("♻️ Kodni yangilash", handleRegenerateInvite);
+bot.hears("👥 A'zolarni boshqarish", startKickMember);
+bot.hears("🚪 Komandadan chiqish", handleLeaveTeam);
+bot.hears("➕ Yangi komanda yaratish", startCreateTeam);
+bot.hears("⬅️ Kabinet", (ctx) => showCabinet(ctx));
+
+// Inline callbacks
+bot.callbackQuery(/^role:/, handleRoleCallback);
+bot.callbackQuery(/^kick:/, handleKickCallback);
+bot.callbackQuery(/^tour:/, handleTournamentDetail);
+bot.callbackQuery(/^register:/, handleStartRegister);
+bot.callbackQuery("noop", handleNoopCallback);
 
 bot.catch(errorHandler);
 
 const start = async () => {
   await bot.init();
   logger.info(`Bot @${bot.botInfo.username} ishga tushdi`);
+  await startBotInternalServer(bot);
   run(bot);
 };
 
