@@ -32,7 +32,6 @@ const formatTournamentCard = (t) => {
     `🏆 <b>${t.title}</b>`,
     "",
     `Rejim: <b>${MODE_LABELS[t.mode] || t.mode}</b>`,
-    `Mintaqa: ${t.region?.name || "-"}`,
     `Boshlanish: ${formatDate(t.startDate)}`,
     t.prizePool ? `Mukofot: <b>${t.prizePool}</b>` : null,
     t.maxTeams ? `Maks. komandalar: ${t.maxTeams}` : null,
