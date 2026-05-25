@@ -1,10 +1,10 @@
-# Bot — Temur PUBGM (bot/)
+# Bot - Temur PUBGM (bot/)
 
 Telegram bot panel. **grammY** kutubxonasi asosida (Telegraf'ning zamonaviy davomchisi). Node.js + ES Modules.
 
 ## Domen va asosiy foydalanuvchi
 
-**Temur PUBGM** — PUBG Mobile turnirlari platformasi. Bot asosan **`player`** rolidagi foydalanuvchilar uchun ishlaydi (web panel emas, Telegram interfeysi).
+**Temur PUBGM** - PUBG Mobile turnirlari platformasi. Bot asosan **`player`** rolidagi foydalanuvchilar uchun ishlaydi (web panel emas, Telegram interfeysi).
 
 Tipik player flow:
 1. `/start` → ro'yxatdan o'tish (PUBG ID, in-game nickname, telefon).
@@ -13,7 +13,7 @@ Tipik player flow:
 4. Turnir boshlanishidan oldin room ID + parolni qabul qilish.
 5. Natijalar va o'z statistikasini ko'rish.
 
-Leader/admin uchun ham yengil komandalar bo'lishi mumkin (xabarnoma, tasdiqlash), lekin to'liq boshqaruv — frontend panellarda.
+Leader/admin uchun ham yengil komandalar bo'lishi mumkin (xabarnoma, tasdiqlash), lekin to'liq boshqaruv - frontend panellarda.
 
 ## Folder structure
 
@@ -36,19 +36,19 @@ bot/src/
 
 ## Asosiy qoidalar
 
-1. **Til**: foydalanuvchiga matn — o'zbek tilida. Kod nomlari — ingliz tilida.
-2. **Handler** — bitta endpoint = bitta fayl (`handlers/<name>.handler.js`). Faqat `ctx`ni qabul qiladi.
-3. **Servis** — backend API'ga so'rovlar `services/api.service.js` orqali (axios instance, `API_BASE_URL` env'dan).
-4. **Keyboard** — `keyboards/<name>.keyboard.js`, ko'p joyda qayta ishlatish uchun.
-5. **Logger** — `console.log` ishlatilmaydi, `logger` import qilinadi.
-6. **Error** — `bot.catch(errorHandler)` orqali markazlashtirilgan.
+1. **Til**: foydalanuvchiga matn - o'zbek tilida. Kod nomlari - ingliz tilida.
+2. **Handler** - bitta endpoint = bitta fayl (`handlers/<name>.handler.js`). Faqat `ctx`ni qabul qiladi.
+3. **Servis** - backend API'ga so'rovlar `services/api.service.js` orqali (axios instance, `API_BASE_URL` env'dan).
+4. **Keyboard** - `keyboards/<name>.keyboard.js`, ko'p joyda qayta ishlatish uchun.
+5. **Logger** - `console.log` ishlatilmaydi, `logger` import qilinadi.
+6. **Error** - `bot.catch(errorHandler)` orqali markazlashtirilgan.
 
 ## grammY tanlanganining sababi
 
 - ES Module-first, zamonaviy API.
 - TypeScript yaxshi qo'llanadi.
-- `@grammyjs/runner` — yuqori yuklamaga chidamli (concurrent updates).
-- `@grammyjs/conversations` — ko'p qadamli scenariy (state machine).
+- `@grammyjs/runner` - yuqori yuklamaga chidamli (concurrent updates).
+- `@grammyjs/conversations` - ko'p qadamli scenariy (state machine).
 - Telegraf'dan kichikroq bundle va faolroq develop.
 
 ## Commands
