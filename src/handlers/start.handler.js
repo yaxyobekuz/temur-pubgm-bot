@@ -4,6 +4,10 @@ import { REGISTER_CONVERSATION } from "./register.handler.js";
 import logger from "../config/logger.js";
 
 const startHandler = async (ctx) => {
+  // Drop any in-flight conversation so a fresh /start doesn't stack handlers
+  // (otherwise each old conversation answers with "Iltimos, mintaqani tanlang").
+  await ctx.conversation.exit();
+
   const payload = ctx.match || "";
   const isTeamDeepLink = typeof payload === "string" && payload.startsWith("team_");
 
