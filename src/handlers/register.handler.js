@@ -37,7 +37,7 @@ export const registerConversation = async (conversation, ctx) => {
   await regionCb.answerCallbackQuery();
 
   await ctx.reply(
-    "Telefon raqamingizni yuboring (Telegram tasdiqlaydi):",
+    "Telefon raqamingizni yuboring:",
     { reply_markup: contactKeyboard },
   );
 
