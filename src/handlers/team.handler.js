@@ -1,4 +1,4 @@
-import { InlineKeyboard } from "grammy";
+import { InlineKeyboard, InputFile } from "grammy";
 import {
   leaderTeamKeyboard,
   playerTeamKeyboard,
@@ -21,6 +21,16 @@ import logger from "../config/logger.js";
 const SERVER_ORIGIN = env.API_BASE_URL.replace(/\/api\/?$/, "");
 const toAbsolute = (url) =>
   /^https?:\/\//i.test(url) ? url : `${SERVER_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
+
+// Telegram can't fetch localhost; the bot downloads the logo and sends it as a buffer.
+const fetchLogoAsInputFile = async (logoUrl) => {
+  const url = toAbsolute(logoUrl);
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`logo fetch failed: ${resp.status}`);
+  const buf = Buffer.from(await resp.arrayBuffer());
+  const name = url.split("/").pop()?.split("?")[0] || "logo.jpg";
+  return new InputFile(buf, name);
+};
 
 const memberLine = (m, leaderId) => {
   const name =
@@ -76,16 +86,24 @@ export const showTeam = async (ctx) => {
   const replyMarkup = isLeader ? leaderTeamKeyboard : playerTeamKeyboard;
   const caption = formatTeam(team);
 
-  if (team.logo) {
-    try {
-      await ctx.replyWithPhoto(toAbsolute(team.logo), {
-        caption,
-        parse_mode: "Markdown",
-        reply_markup: replyMarkup,
-      });
-      return;
-    } catch (err) {
-      logger.warn({ err: err.message }, "team logo photo failed, falling back to text");
+  if (team.logo || team.logoFileId) {
+    const photoOpts = { caption, parse_mode: "Markdown", reply_markup: replyMarkup };
+    // Prefer the cached file_id (instant). If it fails (expired/invalid), fall back to the stored file.
+    if (team.logoFileId) {
+      try {
+        await ctx.replyWithPhoto(team.logoFileId, photoOpts);
+        return;
+      } catch (err) {
+        logger.warn({ err: err.message }, "team logo file_id failed, trying stored file");
+      }
+    }
+    if (team.logo) {
+      try {
+        await ctx.replyWithPhoto(await fetchLogoAsInputFile(team.logo), photoOpts);
+        return;
+      } catch (err) {
+        logger.warn({ err: err.message }, "team logo photo failed, falling back to text");
+      }
     }
   }
   await ctx.reply(caption, {
@@ -141,7 +159,8 @@ export const handleTeamPhoto = async (ctx, next) => {
     const fileId = photos[photos.length - 1].file_id; // largest size
     const file = await ctx.api.getFile(fileId);
     const logoUrl = `https://api.telegram.org/file/bot${env.BOT_TOKEN}/${file.file_path}`;
-    await updateOwnTeam(ctx.from.id, { logoUrl });
+    // Send the file_id too so the bot can resend the logo instantly later (no re-upload).
+    await updateOwnTeam(ctx.from.id, { logoUrl, logoFileId: fileId });
     await ctx.reply("Logotip yangilandi.", { reply_markup: cabinetKeyboard });
   } catch (err) {
     logger.error({ err: err.message }, "team logo upload failed");
