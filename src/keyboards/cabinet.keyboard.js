@@ -2,7 +2,7 @@ import { Keyboard } from "grammy";
 
 export const cabinetKeyboard = new Keyboard()
   .text("👤 Profil")
-  .text("🔁 Rolni almashtirish")
+  .text("⚙️ Sozlamalar")
   .row()
   .text("👥 Mening komandam")
   .text("🏆 Turnirlar")
