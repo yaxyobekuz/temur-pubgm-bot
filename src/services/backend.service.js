@@ -13,6 +13,9 @@ export const fetchMe = (tgId) =>
 export const switchRole = (tgId, newRole) =>
   api.post("/bot/users/role", { tgId, newRole }).then((r) => r.data.data);
 
+export const switchRegion = (tgId, regionId) =>
+  api.post("/bot/users/region", { tgId, regionId }).then((r) => r.data.data);
+
 export const fetchMyTeam = (tgId) =>
   api.get("/bot/teams", { params: { tgId } }).then((r) => r.data.data);
 
@@ -49,3 +52,8 @@ export const registerForTournament = (tgId, id, roster) =>
 
 export const listMyRegistrations = (tgId) =>
   api.get("/bot/registrations", { params: { tgId } }).then((r) => r.data.data);
+
+// --- Help links ------------------------------------------------------------
+
+export const fetchHelpLinks = () =>
+  api.get("/bot/help-links").then((r) => r.data.data);

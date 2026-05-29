@@ -20,15 +20,22 @@ import {
   handleRoleCallback,
 } from "./handlers/roleSwitch.handler.js";
 import {
+  showSettings,
+  askRegionSwitch,
+  handleRegionCallback,
+} from "./handlers/settings.handler.js";
+import {
   showTeam,
   startCreateTeam,
   startRenameTeam,
+  startSetLogo,
   startKickMember,
   handleKickCallback,
   handleRegenerateInvite,
   handleShowInvite,
   handleLeaveTeam,
   handlePendingTextInput,
+  handleTeamPhoto,
 } from "./handlers/team.handler.js";
 import {
   showOpenTournaments,
@@ -60,22 +67,29 @@ bot.use(authContext);
 
 // Pending free-text inputs (team name, rename) - runs before generic handlers.
 bot.on("message:text", handlePendingTextInput);
+// Team logo: only consumes the photo while awaiting "team:logo", else passes through.
+bot.on("message:photo", handleTeamPhoto);
 
 bot.command("start", startHandler);
 bot.command("help", helpHandler);
 
 // Cabinet menu
 bot.hears("👤 Profil", profileHandler);
-bot.hears("🔁 Rolni almashtirish", askRoleSwitch);
+bot.hears("⚙️ Sozlamalar", showSettings);
 bot.hears("👥 Mening komandam", showTeam);
 bot.hears("🏆 Turnirlar", showOpenTournaments);
 bot.hears("📋 Mening turnirlarim", showMyRegistrations);
 bot.hears("ℹ️ Yordam", helpHandler);
 
+// Settings submenu
+bot.hears("🔁 Rolni almashtirish", askRoleSwitch);
+bot.hears("🌍 Mintaqani almashtirish", askRegionSwitch);
+
 // Team submenu
 bot.hears("📛 Komanda nomini o'zgartirish", startRenameTeam);
+bot.hears("🖼 Logotip", startSetLogo);
 bot.hears("🔗 Taklif havolasi", handleShowInvite);
-bot.hears("♻️ Kodni yangilash", handleRegenerateInvite);
+bot.hears("♻️ Havolani yangilash", handleRegenerateInvite);
 bot.hears("👥 A'zolarni boshqarish", startKickMember);
 bot.hears("🚪 Komandadan chiqish", handleLeaveTeam);
 bot.hears("➕ Yangi komanda yaratish", startCreateTeam);
@@ -83,6 +97,7 @@ bot.hears("⬅️ Kabinet", (ctx) => showCabinet(ctx));
 
 // Inline callbacks
 bot.callbackQuery(/^role:/, handleRoleCallback);
+bot.callbackQuery(/^setregion:/, handleRegionCallback);
 bot.callbackQuery(/^kick:/, handleKickCallback);
 bot.callbackQuery(/^tour:/, handleTournamentDetail);
 bot.callbackQuery(/^register:/, handleStartRegister);
