@@ -25,7 +25,7 @@ export const createTeam = (tgId, body) =>
 export const updateOwnTeam = (tgId, body) =>
   api
     // Logo updates make the server download the image, so give that request a longer timeout.
-    .patch("/bot/teams", { tgId, ...body }, body.logoUrl ? { timeout: 60_000 } : undefined)
+    .patch("/bot/teams", { tgId, ...body }, body.logoUrl ? { timeout: 180_000 } : undefined)
     .then((r) => r.data.data);
 
 export const regenerateInvite = (tgId) =>
