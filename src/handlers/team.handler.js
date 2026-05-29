@@ -14,7 +14,13 @@ import {
   leaveTeam,
   fetchMe,
 } from "../services/backend.service.js";
+import { env } from "../config/env.js";
 import logger from "../config/logger.js";
+
+// API_BASE_URL "http://host:5000/api" → "http://host:5000". Static fayllar `/api` ostida emas.
+const SERVER_ORIGIN = env.API_BASE_URL.replace(/\/api\/?$/, "");
+const toAbsolute = (url) =>
+  /^https?:\/\//i.test(url) ? url : `${SERVER_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
 
 const memberLine = (m, leaderId) => {
   const name =
@@ -67,9 +73,24 @@ export const showTeam = async (ctx) => {
 
   const isLeader =
     String(team.leader?._id || team.leader) === String(user._id);
-  await ctx.reply(formatTeam(team), {
+  const replyMarkup = isLeader ? leaderTeamKeyboard : playerTeamKeyboard;
+  const caption = formatTeam(team);
+
+  if (team.logo) {
+    try {
+      await ctx.replyWithPhoto(toAbsolute(team.logo), {
+        caption,
+        parse_mode: "Markdown",
+        reply_markup: replyMarkup,
+      });
+      return;
+    } catch (err) {
+      logger.warn({ err: err.message }, "team logo photo failed, falling back to text");
+    }
+  }
+  await ctx.reply(caption, {
     parse_mode: "Markdown",
-    reply_markup: isLeader ? leaderTeamKeyboard : playerTeamKeyboard,
+    reply_markup: replyMarkup,
   });
 };
 
@@ -94,6 +115,39 @@ export const startRenameTeam = async (ctx) => {
   ctx.session ||= {};
   ctx.session.await = "team:rename";
   await ctx.reply("Yangi nomni yuboring:");
+};
+
+export const startSetLogo = async (ctx) => {
+  const user = ctx.state?.user;
+  if (!user || user.role !== "leader") return;
+  ctx.session ||= {};
+  ctx.session.await = "team:logo";
+  await ctx.reply("Logotip uchun rasm yuboring:");
+};
+
+// Photo catcher - only acts when the leader is setting a team logo.
+export const handleTeamPhoto = async (ctx, next) => {
+  if (ctx.session?.await !== "team:logo") return next();
+  ctx.session.await = null;
+
+  const photos = ctx.message?.photo;
+  if (!photos?.length) {
+    await ctx.reply("Rasm topilmadi. Qaytadan urinib ko'ring.", {
+      reply_markup: cabinetKeyboard,
+    });
+    return;
+  }
+  try {
+    const fileId = photos[photos.length - 1].file_id; // largest size
+    const file = await ctx.api.getFile(fileId);
+    const logoUrl = `https://api.telegram.org/file/bot${env.BOT_TOKEN}/${file.file_path}`;
+    await updateOwnTeam(ctx.from.id, { logoUrl });
+    await ctx.reply("Logotip yangilandi.", { reply_markup: cabinetKeyboard });
+  } catch (err) {
+    logger.error({ err: err.message }, "team logo upload failed");
+    const msg = err?.response?.data?.message || "Logotipni yuklab bo'lmadi";
+    await ctx.reply(msg, { reply_markup: cabinetKeyboard });
+  }
 };
 
 export const startKickMember = async (ctx) => {

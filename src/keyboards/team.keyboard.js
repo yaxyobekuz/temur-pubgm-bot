@@ -2,9 +2,10 @@ import { Keyboard } from "grammy";
 
 export const leaderTeamKeyboard = new Keyboard()
   .text("📛 Komanda nomini o'zgartirish")
+  .text("🖼 Logotip")
   .row()
   .text("🔗 Taklif havolasi")
-  .text("♻️ Kodni yangilash")
+  .text("♻️ Havolani yangilash")
   .row()
   .text("👥 A'zolarni boshqarish")
   .row()
