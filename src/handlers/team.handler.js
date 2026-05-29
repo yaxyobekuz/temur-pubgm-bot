@@ -155,17 +155,18 @@ export const handleTeamPhoto = async (ctx, next) => {
     });
     return;
   }
+  const status = await ctx.reply("Yuklanmoqda...");
   try {
     const fileId = photos[photos.length - 1].file_id; // largest size
     const file = await ctx.api.getFile(fileId);
     const logoUrl = `https://api.telegram.org/file/bot${env.BOT_TOKEN}/${file.file_path}`;
     // Send the file_id too so the bot can resend the logo instantly later (no re-upload).
     await updateOwnTeam(ctx.from.id, { logoUrl, logoFileId: fileId });
-    await ctx.reply("Logotip yangilandi.", { reply_markup: cabinetKeyboard });
+    await ctx.api.editMessageText(status.chat.id, status.message_id, "Logotip yangilandi ✅");
   } catch (err) {
     logger.error({ err: err.message }, "team logo upload failed");
     const msg = err?.response?.data?.message || "Logotipni yuklab bo'lmadi";
-    await ctx.reply(msg, { reply_markup: cabinetKeyboard });
+    await ctx.api.editMessageText(status.chat.id, status.message_id, msg);
   }
 };
 
