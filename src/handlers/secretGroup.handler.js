@@ -26,17 +26,15 @@ export const handleMyChatMember = async (ctx) => {
       const full = await ctx.api.getChat(chat.id).catch(() => null);
       inviteHash = inviteHashFrom(full?.invite_link);
     }
-    if (!inviteHash) {
-      logger.warn({ chatId: chat.id }, "secret group: no invite hash to match");
-      return;
-    }
+    // inviteHash topilmasa ham yuboramiz - server guruhni chatId bo'yicha keshlaydi,
+    // havola keyin turnirga yozilganda moslashtirish ishlashi uchun.
     const res = await resolveSecretGroup({
-      inviteHash,
+      inviteHash: inviteHash || "",
       chatId: chat.id,
       title: chat.title || "",
     });
     logger.info(
-      { chatId: chat.id, matched: !!res?.matched },
+      { chatId: chat.id, hasHash: !!inviteHash, matched: !!res?.matched },
       "secret group resolve attempt",
     );
   } catch (err) {
