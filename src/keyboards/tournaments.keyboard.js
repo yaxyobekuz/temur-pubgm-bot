@@ -55,3 +55,10 @@ export const buildSponsorChannelsKeyboard = (channels = []) => {
   }
   return kb;
 };
+
+// Secret group rejection - single URL button to join the private group.
+export const buildSecretGroupKeyboard = (group) => {
+  const kb = new InlineKeyboard();
+  if (group?.url) kb.url(group.title || "Maxfiy guruh", group.url);
+  return kb;
+};

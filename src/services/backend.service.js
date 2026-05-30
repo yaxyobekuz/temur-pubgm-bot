@@ -60,3 +60,8 @@ export const listMyRegistrations = (tgId) =>
 
 export const fetchHelpLinks = () =>
   api.get("/bot/help-links").then((r) => r.data.data);
+
+// --- Secret group ----------------------------------------------------------
+
+export const resolveSecretGroup = (payload) =>
+  api.post("/bot/secret-group/resolve", payload).then((r) => r.data.data);

@@ -49,6 +49,7 @@ import {
   handleRosterCancel,
   handleRosterSubmit,
 } from "./handlers/registerTournament.handler.js";
+import { handleMyChatMember } from "./handlers/secretGroup.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
 
@@ -64,6 +65,9 @@ bot.use(
 bot.use(conversations());
 bot.use(createConversation(registerConversation, REGISTER_CONVERSATION));
 bot.use(authContext);
+
+// Bot added/removed in a group (admin) - auto-capture secret group chat_id.
+bot.on("my_chat_member", handleMyChatMember);
 
 // Pending free-text inputs (team name, rename) - runs before generic handlers.
 bot.on("message:text", handlePendingTextInput);
@@ -112,7 +116,19 @@ const start = async () => {
   await bot.init();
   logger.info(`Bot @${bot.botInfo.username} ishga tushdi`);
   await startBotInternalServer(bot);
-  run(bot);
+  // my_chat_member/chat_member are NOT delivered by default - opt in explicitly.
+  run(bot, {
+    runner: {
+      fetch: {
+        allowed_updates: [
+          "message",
+          "callback_query",
+          "my_chat_member",
+          "chat_member",
+        ],
+      },
+    },
+  });
 };
 
 process.once("SIGINT", () => bot.stop());

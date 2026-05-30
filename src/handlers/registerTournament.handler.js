@@ -6,6 +6,7 @@ import {
 import {
   buildRosterPickerKeyboard,
   buildSponsorChannelsKeyboard,
+  buildSecretGroupKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
 import logger from "../config/logger.js";
@@ -207,6 +208,17 @@ export const handleRosterSubmit = async (ctx) => {
       await ctx.editMessageText(
         "❗ Quyidagi homiy kanallarga obuna bo'ling va qaytadan urinib ko'ring:",
         { reply_markup: buildSponsorChannelsKeyboard(data.details) },
+      );
+      return;
+    }
+    if (data?.secretGroup?.url) {
+      await ctx.answerCallbackQuery({
+        text: "Avval maxfiy guruhga qo'shiling",
+        show_alert: true,
+      });
+      await ctx.editMessageText(
+        "❗ Avval ushbu turnirning maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
+        { reply_markup: buildSecretGroupKeyboard(data.secretGroup) },
       );
       return;
     }
