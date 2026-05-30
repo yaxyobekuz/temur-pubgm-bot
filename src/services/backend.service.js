@@ -16,6 +16,11 @@ export const switchRole = (tgId, newRole) =>
 export const switchRegion = (tgId, regionId) =>
   api.post("/bot/users/region", { tgId, regionId }).then((r) => r.data.data);
 
+export const updateContactUsername = (tgId, contactUsername) =>
+  api
+    .patch("/bot/users/contact-username", { tgId, contactUsername })
+    .then((r) => r.data.data);
+
 export const fetchMyTeam = (tgId) =>
   api.get("/bot/teams", { params: { tgId } }).then((r) => r.data.data);
 

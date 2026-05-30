@@ -13,7 +13,10 @@ import {
   kickMember,
   leaveTeam,
   fetchMe,
+  updateContactUsername,
 } from "../services/backend.service.js";
+import { parseUsername } from "../utils/parseUsername.js";
+import { completeRegisterContactUsername } from "./registerTournament.handler.js";
 import { env } from "../config/env.js";
 import logger from "../config/logger.js";
 
@@ -267,6 +270,22 @@ export const handlePendingTextInput = async (ctx, next) => {
     } else if (awaiting === "team:rename") {
       await updateOwnTeam(ctx.from.id, { name: text });
       await ctx.reply("Nom yangilandi.", { reply_markup: cabinetKeyboard });
+    } else if (awaiting === "settings:contact-username") {
+      const username = parseUsername(text);
+      if (!username) {
+        await ctx.reply(
+          "Username noto'g'ri. Masalan: @username yoki t.me/username",
+          { reply_markup: cabinetKeyboard },
+        );
+        return;
+      }
+      await updateContactUsername(ctx.from.id, username);
+      ctx.state.user = await fetchMe(ctx.from.id).catch(() => ctx.state.user);
+      await ctx.reply(`✅ Aloqa username saqlandi: @${username}`, {
+        reply_markup: cabinetKeyboard,
+      });
+    } else if (awaiting === "register:contact-username") {
+      await completeRegisterContactUsername(ctx, text);
     } else {
       return next();
     }

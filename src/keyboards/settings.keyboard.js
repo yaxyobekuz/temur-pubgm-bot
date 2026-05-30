@@ -5,5 +5,7 @@ export const settingsKeyboard = new Keyboard()
   .row()
   .text("🌍 Mintaqani almashtirish")
   .row()
+  .text("🔗 Aloqa username")
+  .row()
   .text("⬅️ Kabinet")
   .resized();

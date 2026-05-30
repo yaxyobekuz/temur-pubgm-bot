@@ -13,6 +13,20 @@ export const showSettings = async (ctx) => {
   await ctx.reply("⚙️ Sozlamalar:", { reply_markup: settingsKeyboard });
 };
 
+export const askContactUsername = async (ctx) => {
+  const user = ctx.state?.user;
+  if (!user) {
+    await ctx.reply("Avval ro'yxatdan o'ting: /start");
+    return;
+  }
+  ctx.session ||= {};
+  ctx.session.await = "settings:contact-username";
+  const current = user.contactUsername ? `@${user.contactUsername}` : "-";
+  await ctx.reply(
+    `🔗 Aloqa username\nHozirgi: ${current}\n\nYangi usernameni yuboring (@username yoki t.me/... bo'lishi mumkin):`,
+  );
+};
+
 export const askRegionSwitch = async (ctx) => {
   const user = ctx.state?.user;
   if (!user) {

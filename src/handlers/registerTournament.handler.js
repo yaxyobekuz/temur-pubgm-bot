@@ -2,6 +2,8 @@ import {
   getTournamentById,
   fetchMyTeam,
   registerForTournament,
+  updateContactUsername,
+  fetchMe,
 } from "../services/backend.service.js";
 import {
   buildRosterPickerKeyboard,
@@ -9,6 +11,7 @@ import {
   buildSecretGroupKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
+import { parseUsername } from "../utils/parseUsername.js";
 import logger from "../config/logger.js";
 
 const MODE_ROSTER_SIZE = { solo: 1, duo: 2, squad: 4 };
@@ -32,24 +35,8 @@ const renderKeyboard = (members, slots, required) => {
   return buildRosterPickerKeyboard(members, slots, main === required);
 };
 
-// "📝 Ro'yxatdan o'tish" tugmasi - roster picker'ni ochadi.
-export const handleStartRegister = async (ctx) => {
-  const tournamentId = ctx.callbackQuery.data.split(":")[1];
-  const user = ctx.state?.user;
-  if (!user) {
-    await ctx.answerCallbackQuery({ text: "Avval /start", show_alert: true });
-    return;
-  }
-  if (user.role !== "leader") {
-    await ctx.answerCallbackQuery({
-      text: "Faqat leader ro'yxatdan o'tkaza oladi",
-      show_alert: true,
-    });
-    return;
-  }
-
-  await ctx.answerCallbackQuery();
-
+// Roster picker'ni ochadi - turnir/komanda yuklab, slot tanlash holatini sessiyaga yozadi.
+const openRosterPicker = async (ctx, tournamentId) => {
   let tournament;
   let team;
   try {
@@ -99,6 +86,65 @@ export const handleStartRegister = async (ctx) => {
     parse_mode: "HTML",
     reply_markup: renderKeyboard(members, slots, required),
   });
+};
+
+// "📝 Ro'yxatdan o'tish" tugmasi - roster picker'ni ochadi.
+export const handleStartRegister = async (ctx) => {
+  const tournamentId = ctx.callbackQuery.data.split(":")[1];
+  const user = ctx.state?.user;
+  if (!user) {
+    await ctx.answerCallbackQuery({ text: "Avval /start", show_alert: true });
+    return;
+  }
+  if (user.role !== "leader") {
+    await ctx.answerCallbackQuery({
+      text: "Faqat leader ro'yxatdan o'tkaza oladi",
+      show_alert: true,
+    });
+    return;
+  }
+
+  await ctx.answerCallbackQuery();
+
+  // Aloqa username bo'lmasa - joyida so'rab, kiritgach roster picker avtomatik ochiladi.
+  if (!user.contactUsername) {
+    ctx.session ||= {};
+    ctx.session.await = "register:contact-username";
+    ctx.session.pendingRegisterTournamentId = tournamentId;
+    await ctx.reply(
+      "Turnirga qo'shilishdan oldin aloqa username kiriting (@username yoki t.me/...):",
+    );
+    return;
+  }
+
+  await openRosterPicker(ctx, tournamentId);
+};
+
+// register:contact-username await holatini yakunlaydi (team.handler dispatcher chaqiradi).
+export const completeRegisterContactUsername = async (ctx, text) => {
+  const username = parseUsername(text);
+  if (!username) {
+    await ctx.reply(
+      "Username noto'g'ri. Masalan: @username yoki t.me/username",
+      { reply_markup: cabinetKeyboard },
+    );
+    return;
+  }
+
+  const tournamentId = ctx.session?.pendingRegisterTournamentId;
+  ctx.session.pendingRegisterTournamentId = null;
+
+  try {
+    await updateContactUsername(ctx.from.id, username);
+    ctx.state.user = await fetchMe(ctx.from.id).catch(() => ctx.state.user);
+  } catch (err) {
+    const msg = err?.response?.data?.message || "Saqlashda xato";
+    await ctx.reply(msg, { reply_markup: cabinetKeyboard });
+    return;
+  }
+
+  await ctx.reply(`✅ Aloqa username saqlandi: @${username}`);
+  if (tournamentId) await openRosterPicker(ctx, tournamentId);
 };
 
 const getState = (ctx) => ctx.session?.roster || null;

@@ -22,6 +22,7 @@ import {
 import {
   showSettings,
   askRegionSwitch,
+  askContactUsername,
   handleRegionCallback,
 } from "./handlers/settings.handler.js";
 import {
@@ -59,6 +60,7 @@ bot.use(
       await: null,
       pendingInvite: null,
       roster: null,
+      pendingRegisterTournamentId: null,
     }),
   }),
 );
@@ -88,6 +90,7 @@ bot.hears("ℹ️ Yordam", helpHandler);
 // Settings submenu
 bot.hears("🔁 Rolni almashtirish", askRoleSwitch);
 bot.hears("🌍 Mintaqani almashtirish", askRegionSwitch);
+bot.hears("🔗 Aloqa username", askContactUsername);
 
 // Team submenu
 bot.hears("📛 Komanda nomini o'zgartirish", startRenameTeam);
