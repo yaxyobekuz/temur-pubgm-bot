@@ -1,43 +1,33 @@
-import { resolveSecretGroup } from "../services/backend.service.js";
 import logger from "../config/logger.js";
 
 const GROUP_TYPES = new Set(["group", "supergroup"]);
-const ADMIN_STATUSES = new Set(["administrator", "member", "creator"]);
 
-const inviteHashFrom = (url) => {
-  const m = (url || "").match(/t\.me\/(?:\+|joinchat\/)([A-Za-z0-9_-]+)/i);
-  return m ? m[1] : null;
-};
-
-// When the bot is added to a private group (as admin/member), capture its chat_id
-// and match it to the tournament whose secret-group invite link hash matches.
-export const handleMyChatMember = async (ctx) => {
-  const upd = ctx.myChatMember;
+// /id - in a group, replies with the chat_id so the admin can paste it into the panel
+// as the tournament's secret-group chatId. Requires the bot to be an admin there.
+export const handleIdCommand = async (ctx) => {
   const chat = ctx.chat;
-  if (!upd || !chat || !GROUP_TYPES.has(chat.type)) return;
+  if (!chat) return;
 
-  const status = upd.new_chat_member?.status;
-  if (!ADMIN_STATUSES.has(status)) return; // bot left/kicked - ignore
+  if (!GROUP_TYPES.has(chat.type)) {
+    await ctx.reply("Bu buyruq faqat guruh ichida ishlaydi.");
+    return;
+  }
 
   try {
-    // Prefer the invite link from the update; else read the chat's primary invite link.
-    let inviteHash = inviteHashFrom(upd.invite_link?.invite_link);
-    if (!inviteHash) {
-      const full = await ctx.api.getChat(chat.id).catch(() => null);
-      inviteHash = inviteHashFrom(full?.invite_link);
+    const me = await ctx.api.getChatMember(chat.id, ctx.me.id);
+    const isAdmin = me.status === "administrator" || me.status === "creator";
+    if (!isAdmin) {
+      await ctx.reply(
+        "Avval meni guruhga admin qiling, so'ng /id buyrug'ini qayta yuboring.",
+      );
+      return;
     }
-    // inviteHash topilmasa ham yuboramiz - server guruhni chatId bo'yicha keshlaydi,
-    // havola keyin turnirga yozilganda moslashtirish ishlashi uchun.
-    const res = await resolveSecretGroup({
-      inviteHash: inviteHash || "",
-      chatId: chat.id,
-      title: chat.title || "",
-    });
-    logger.info(
-      { chatId: chat.id, hasHash: !!inviteHash, matched: !!res?.matched },
-      "secret group resolve attempt",
+    await ctx.reply(
+      `🆔 Guruh Chat ID:\n<code>${chat.id}</code>\n\nShu raqamni admin panelda "Maxfiy guruh" bo'limiga kiriting.`,
+      { parse_mode: "HTML" },
     );
   } catch (err) {
-    logger.warn({ err: err.message, chatId: chat.id }, "secret group resolve failed");
+    logger.warn({ err: err.message, chatId: chat.id }, "/id failed");
+    await ctx.reply("Chat ID'ni aniqlab bo'lmadi. Bot guruhda adminmi?");
   }
 };

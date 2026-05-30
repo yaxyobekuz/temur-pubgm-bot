@@ -50,7 +50,7 @@ import {
   handleRosterCancel,
   handleRosterSubmit,
 } from "./handlers/registerTournament.handler.js";
-import { handleMyChatMember } from "./handlers/secretGroup.handler.js";
+import { handleIdCommand } from "./handlers/secretGroup.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
 
@@ -68,9 +68,6 @@ bot.use(conversations());
 bot.use(createConversation(registerConversation, REGISTER_CONVERSATION));
 bot.use(authContext);
 
-// Bot added/removed in a group (admin) - auto-capture secret group chat_id.
-bot.on("my_chat_member", handleMyChatMember);
-
 // Pending free-text inputs (team name, rename) - runs before generic handlers.
 bot.on("message:text", handlePendingTextInput);
 // Team logo: only consumes the photo while awaiting "team:logo", else passes through.
@@ -78,6 +75,8 @@ bot.on("message:photo", handleTeamPhoto);
 
 bot.command("start", startHandler);
 bot.command("help", helpHandler);
+// In a group: replies with the chat_id (secret group setup). Requires the bot to be admin.
+bot.command("id", handleIdCommand);
 
 // Cabinet menu
 bot.hears("👤 Profil", profileHandler);
@@ -119,19 +118,7 @@ const start = async () => {
   await bot.init();
   logger.info(`Bot @${bot.botInfo.username} ishga tushdi`);
   await startBotInternalServer(bot);
-  // my_chat_member/chat_member are NOT delivered by default - opt in explicitly.
-  run(bot, {
-    runner: {
-      fetch: {
-        allowed_updates: [
-          "message",
-          "callback_query",
-          "my_chat_member",
-          "chat_member",
-        ],
-      },
-    },
-  });
+  run(bot);
 };
 
 process.once("SIGINT", () => bot.stop());
