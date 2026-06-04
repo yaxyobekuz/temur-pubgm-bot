@@ -49,7 +49,17 @@ import {
   handleSlotToggle,
   handleRosterCancel,
   handleRosterSubmit,
+  handleSlotDay,
+  handleSlotTime,
+  handleSlotBack,
 } from "./handlers/registerTournament.handler.js";
+import {
+  showPendingPlacement,
+  handlePlaceDay,
+  handlePlaceTime,
+  handlePlaceBack,
+  handlePlaceCancel,
+} from "./handlers/placement.handler.js";
 import { handleIdCommand } from "./handlers/secretGroup.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
@@ -60,6 +70,7 @@ bot.use(
       await: null,
       pendingInvite: null,
       roster: null,
+      placement: null,
       pendingRegisterTournamentId: null,
     }),
   }),
@@ -83,6 +94,7 @@ bot.hears("👤 Profil", profileHandler);
 bot.hears("⚙️ Sozlamalar", showSettings);
 bot.hears("👥 Mening komandam", showTeam);
 bot.hears("🏆 Turnirlar", showOpenTournaments);
+bot.hears("🎟 Bosqich slotini tanlash", showPendingPlacement);
 bot.hears("📋 Mening turnirlarim", showMyRegistrations);
 bot.hears("ℹ️ Yordam", helpHandler);
 
@@ -107,9 +119,20 @@ bot.callbackQuery(/^setregion:/, handleRegionCallback);
 bot.callbackQuery(/^kick:/, handleKickCallback);
 bot.callbackQuery(/^tour:/, handleTournamentDetail);
 bot.callbackQuery(/^register:/, handleStartRegister);
-bot.callbackQuery(/^slot:/, handleSlotToggle);
 bot.callbackQuery("roster:cancel", handleRosterCancel);
 bot.callbackQuery("roster:submit", handleRosterSubmit);
+// Stage-1 slot picker (cascading day -> time) during registration.
+bot.callbackQuery(/^slotday:/, handleSlotDay);
+bot.callbackQuery(/^slottime:/, handleSlotTime);
+bot.callbackQuery("slotback", handleSlotBack);
+bot.callbackQuery("slotcancel", handleRosterCancel);
+// Roster member slot toggle (slot:<userId>) - keep AFTER the slotday/slottime routes above.
+bot.callbackQuery(/^slot:/, handleSlotToggle);
+// Advanced/VIP placement picker (cascading day -> time) for next stages.
+bot.callbackQuery(/^placeday:/, handlePlaceDay);
+bot.callbackQuery(/^placetime:/, handlePlaceTime);
+bot.callbackQuery("placeback", handlePlaceBack);
+bot.callbackQuery("placecancel", handlePlaceCancel);
 bot.callbackQuery("noop", handleNoopCallback);
 
 bot.catch(errorHandler);
