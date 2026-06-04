@@ -73,9 +73,9 @@ export const registerConversation = async (conversation, ctx) => {
     );
   } catch (err) {
     logger.error({ err: err.message }, "register-or-login failed");
-    await ctx.reply("Ro'yxatdan o'tishda xato. Keyinroq urinib ko'ring.", {
-      reply_markup: new Keyboard().resized(),
-    });
+    // Serverdan kelgan aniq sababni ko'rsatamiz (masalan telefon/mintaqa xatosi).
+    const msg = err?.response?.data?.message || "Ro'yxatdan o'tishda xato. Keyinroq urinib ko'ring.";
+    await ctx.reply(msg, { reply_markup: new Keyboard().resized() });
   }
 };
 
