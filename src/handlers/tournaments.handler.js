@@ -27,6 +27,19 @@ const formatDate = (iso) => {
   });
 };
 
+const MONTHS_UZ = [
+  "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+  "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr",
+];
+
+// "21-may, 2026" - schedule day label.
+const formatDateOnly = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getDate()}-${MONTHS_UZ[d.getMonth()]}, ${d.getFullYear()}`;
+};
+
 const formatTournamentCard = (t) => {
   const lines = [
     `🏆 <b>${t.title}</b>`,
@@ -148,6 +161,17 @@ export const showMyRegistrations = async (ctx) => {
     const tName = r.tournament?.title || "Turnir";
     const status = STATUS_LABELS[r.status] || r.status;
     lines.push(`• <b>${tName}</b> - ${status}`);
+    if (r.currentGroup?.code) {
+      const g = r.currentGroup;
+      const dayLabel = g.date ? formatDateOnly(g.date) : g.day ? `${g.day}-kun` : null;
+      const timeLabel = g.time || (g.timeSlot ? `${g.timeSlot}-vaqt` : null);
+      const slot = [dayLabel, timeLabel].filter(Boolean).join(", ");
+      lines.push(`   Guruh ${g.code}${slot ? ` · ${slot}` : ""}`);
+    }
+    // Advanced/VIP but not yet placed into the next stage.
+    if ((r.eligibleStage || 1) > (r.placedStage || 0)) {
+      lines.push("   ⚠️ Keyingi bosqich uchun joy tanlang: 🎟 Bosqich slotini tanlash");
+    }
     if (r.tournament?.startDate) {
       lines.push(`   ${formatDate(r.tournament.startDate)}`);
     }
