@@ -15,6 +15,7 @@ import {
   buildTimePickerKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
+import { sendBannerPhoto } from "./tournaments.handler.js";
 import { parseUsername } from "../utils/parseUsername.js";
 import logger from "../config/logger.js";
 
@@ -85,6 +86,9 @@ const openRosterPicker = async (ctx, tournamentId) => {
     })),
     slots,
   };
+
+  // Ro'yxatdan o'tish boshida turnir bannerini ko'rsatamiz (bo'lsa).
+  await sendBannerPhoto(ctx, tournament).catch(() => {});
 
   await ctx.reply(buildStatusText(tournament, required, slots), {
     parse_mode: "HTML",

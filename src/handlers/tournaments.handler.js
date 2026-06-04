@@ -2,11 +2,13 @@ import {
   listOpenTournaments,
   getTournamentById,
   listMyRegistrations,
+  setTournamentBannerFileId,
 } from "../services/backend.service.js";
 import {
   buildTournamentsListKeyboard,
   buildTournamentDetailKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
+import { fetchAsInputFile } from "../utils/media.js";
 import logger from "../config/logger.js";
 
 const MODE_LABELS = { solo: "Solo (1)", duo: "Duo (2)", squad: "Squad (4)" };
@@ -60,6 +62,77 @@ const formatTournamentCard = (t) => {
   return lines.join("\n");
 };
 
+// Sends just the banner image (no keyboard) with an optional caption. Caches the
+// file_id on first upload. No-op (returns false) when the tournament has no banner.
+export const sendBannerPhoto = async (ctx, tournament, caption = "") => {
+  if (!tournament.bannerFileId && !tournament.banner) return false;
+  const opts = caption ? { caption, parse_mode: "HTML" } : {};
+
+  if (tournament.bannerFileId) {
+    try {
+      await ctx.replyWithPhoto(tournament.bannerFileId, opts);
+      return true;
+    } catch (err) {
+      logger.warn({ err: err.message }, "banner file_id failed, trying stored file");
+    }
+  }
+  try {
+    const sent = await ctx.replyWithPhoto(
+      await fetchAsInputFile(tournament.banner, "banner.jpg"),
+      opts,
+    );
+    const fileId = sent.photo?.[sent.photo.length - 1]?.file_id;
+    if (fileId) {
+      setTournamentBannerFileId(tournament._id, fileId).catch((err) =>
+        logger.warn({ err: err.message }, "cache banner file_id failed"),
+      );
+    }
+    return true;
+  } catch (err) {
+    logger.warn({ err: err.message }, "banner photo failed");
+    return false;
+  }
+};
+
+// Sends a tournament with its banner as a photo (caption = card). Caches the
+// Telegram file_id on first upload so later sends are instant. Falls back to text.
+export const sendTournamentCard = async (ctx, tournament, replyMarkup) => {
+  const caption = formatTournamentCard(tournament);
+  const opts = { caption, parse_mode: "HTML", reply_markup: replyMarkup };
+
+  if (tournament.bannerFileId) {
+    try {
+      await ctx.replyWithPhoto(tournament.bannerFileId, opts);
+      return;
+    } catch (err) {
+      logger.warn({ err: err.message }, "tournament banner file_id failed, trying stored file");
+    }
+  }
+  if (tournament.banner) {
+    try {
+      const sent = await ctx.replyWithPhoto(
+        await fetchAsInputFile(tournament.banner, "banner.jpg"),
+        opts,
+      );
+      // Cache the largest photo's file_id for instant resends (best-effort).
+      const fileId = sent.photo?.[sent.photo.length - 1]?.file_id;
+      if (fileId) {
+        setTournamentBannerFileId(tournament._id, fileId).catch((err) =>
+          logger.warn({ err: err.message }, "cache banner file_id failed"),
+        );
+      }
+      return;
+    } catch (err) {
+      logger.warn({ err: err.message }, "tournament banner photo failed, falling back to text");
+    }
+  }
+  await ctx.reply(caption, {
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+    reply_markup: replyMarkup,
+  });
+};
+
 export const showOpenTournaments = async (ctx) => {
   const user = ctx.state?.user;
   if (!user) {
@@ -87,10 +160,12 @@ export const handleTournamentDetail = async (ctx) => {
   const id = ctx.callbackQuery.data.split(":")[1];
   if (id === "back") {
     await ctx.answerCallbackQuery();
-    // List'ni qayta ko'rsatish - eski xabarni edit qilamiz.
+    // List'ni qayta ko'rsatish. Oldingi xabar rasm (banner) bo'lishi mumkin -
+    // rasmni edit qilib bo'lmaydi, shuning uchun o'chirib yangi xabar yuboramiz.
     try {
       const items = await listOpenTournaments();
-      await ctx.editMessageText("Ochiq turnirlar:", {
+      await ctx.deleteMessage().catch(() => {});
+      await ctx.reply("Ochiq turnirlar:", {
         reply_markup: buildTournamentsListKeyboard(items),
       });
     } catch (err) {
@@ -112,15 +187,14 @@ export const handleTournamentDetail = async (ctx) => {
         r.status === "registered",
     );
     const canRegister = user?.role === "leader";
-
-    await ctx.editMessageText(formatTournamentCard(tournament), {
-      parse_mode: "HTML",
-      disable_web_page_preview: true,
-      reply_markup: buildTournamentDetailKeyboard(tournament, {
-        canRegister,
-        alreadyRegistered,
-      }),
+    const replyMarkup = buildTournamentDetailKeyboard(tournament, {
+      canRegister,
+      alreadyRegistered,
     });
+
+    // List xabarini almashtirib, banner bilan turnir kartasini yuboramiz.
+    await ctx.deleteMessage().catch(() => {});
+    await sendTournamentCard(ctx, tournament, replyMarkup);
   } catch (err) {
     logger.warn({ err: err.message, id }, "tournament detail failed");
     const msg = err?.response?.data?.message || "Turnirni yuklab bo'lmadi";

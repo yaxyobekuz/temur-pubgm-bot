@@ -53,6 +53,10 @@ export const listOpenTournaments = () =>
 export const getTournamentById = (id) =>
   api.get(`/bot/tournaments/${id}`).then((r) => r.data.data);
 
+// Cache the Telegram file_id after the first banner upload (best-effort).
+export const setTournamentBannerFileId = (id, fileId) =>
+  api.patch(`/bot/tournaments/${id}/banner-file-id`, { fileId }).then((r) => r.data.data);
+
 export const fetchOpenSlots = (id) =>
   api.get(`/bot/tournaments/${id}/open-slots`).then((r) => r.data.data);
 
