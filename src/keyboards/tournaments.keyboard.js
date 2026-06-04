@@ -47,12 +47,14 @@ export const buildRosterPickerKeyboard = (members = [], slots = {}, canSubmit = 
   return kb;
 };
 
-// Sponsor channel rejection - har bir kanal uchun URL tugma.
+// Sponsor channel rejection - har bir kanal uchun URL tugma + qayta tekshirish tugmasi.
+// "subcheck" statik - tournamentId/day/timeSlot sessiyadan o'qiladi (callback-data limiti uchun).
 export const buildSponsorChannelsKeyboard = (channels = []) => {
   const kb = new InlineKeyboard();
   for (const c of channels) {
     kb.url(c.title || "Kanal", c.url).row();
   }
+  kb.text("🔄 Tekshirish", "subcheck");
   return kb;
 };
 

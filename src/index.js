@@ -49,6 +49,7 @@ import {
   handleSlotToggle,
   handleRosterCancel,
   handleRosterSubmit,
+  handleSubCheck,
   handleSlotDay,
   handleSlotTime,
   handleSlotBack,
@@ -72,6 +73,7 @@ bot.use(
       roster: null,
       placement: null,
       pendingRegisterTournamentId: null,
+      sponsorTournamentId: null,
     }),
   }),
 );
@@ -121,6 +123,8 @@ bot.callbackQuery(/^tour:/, handleTournamentDetail);
 bot.callbackQuery(/^register:/, handleStartRegister);
 bot.callbackQuery("roster:cancel", handleRosterCancel);
 bot.callbackQuery("roster:submit", handleRosterSubmit);
+// Sponsor obunani qayta tekshirish (forced subscription) - o'tsa avtomatik davom etadi.
+bot.callbackQuery("subcheck", handleSubCheck);
 // Stage-1 slot picker (cascading day -> time) during registration.
 bot.callbackQuery(/^slotday:/, handleSlotDay);
 bot.callbackQuery(/^slottime:/, handleSlotTime);

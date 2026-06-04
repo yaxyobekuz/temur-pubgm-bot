@@ -56,6 +56,12 @@ export const getTournamentById = (id) =>
 export const fetchOpenSlots = (id) =>
   api.get(`/bot/tournaments/${id}/open-slots`).then((r) => r.data.data);
 
+// Komandaning homiy kanal obunasini erta tekshiradi (roster tanlashdan oldin).
+export const checkSponsorMembership = (tgId, id) =>
+  api
+    .get(`/bot/tournaments/${id}/sponsor-check`, { params: { tgId } })
+    .then((r) => r.data.data);
+
 export const registerForTournament = (tgId, id, roster, day, timeSlot) =>
   api
     .post(`/bot/tournaments/${id}/register`, { tgId, roster, day, timeSlot })

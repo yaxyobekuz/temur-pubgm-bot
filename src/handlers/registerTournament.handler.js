@@ -2,6 +2,7 @@ import {
   getTournamentById,
   fetchMyTeam,
   fetchOpenSlots,
+  checkSponsorMembership,
   registerForTournament,
   updateContactUsername,
   fetchMe,
@@ -91,7 +92,38 @@ const openRosterPicker = async (ctx, tournamentId) => {
   });
 };
 
-// "📝 Ro'yxatdan o'tish" tugmasi - roster picker'ni ochadi.
+// Homiy kanal obunasini (butun komanda) tekshiradi. Hammasi obuna bo'lsa - roster picker.
+// Aks holda - obuna bo'lmagan a'zolar ismlari + kanal tugmalari + "Tekshirish".
+// `edit` true bo'lsa mavjud xabar tahrirlanadi (Tekshirish bosilganida).
+const runSponsorGate = async (ctx, tournamentId, { edit = false } = {}) => {
+  let res;
+  try {
+    res = await checkSponsorMembership(ctx.from.id, tournamentId);
+  } catch (err) {
+    logger.warn({ err: err.message }, "sponsor-check failed");
+    const msg = err?.response?.data?.message || "Tekshirib bo'lmadi. Keyinroq urinib ko'ring.";
+    await ctx.reply(msg, { reply_markup: cabinetKeyboard });
+    return;
+  }
+
+  if (res.ok) {
+    await openRosterPicker(ctx, tournamentId);
+    return;
+  }
+
+  ctx.session ||= {};
+  ctx.session.sponsorTournamentId = tournamentId;
+  const names = (res.members || []).map((m) => `- ${m.name}`).join("\n");
+  const text = `❗ Quyidagi a'zolar homiy kanallarga obuna emas:\n<b>${names || "-"}</b>\n\nObuna bo'lib, "🔄 Tekshirish"ni bosing:`;
+  const opts = {
+    parse_mode: "HTML",
+    reply_markup: buildSponsorChannelsKeyboard(res.channels),
+  };
+  if (edit) await ctx.editMessageText(text, opts);
+  else await ctx.reply(text, opts);
+};
+
+// "📝 Ro'yxatdan o'tish" tugmasi - obunani tekshiradi, so'ng roster picker'ni ochadi.
 export const handleStartRegister = async (ctx) => {
   const tournamentId = ctx.callbackQuery.data.split(":")[1];
   const user = ctx.state?.user;
@@ -109,7 +141,7 @@ export const handleStartRegister = async (ctx) => {
 
   await ctx.answerCallbackQuery();
 
-  // Aloqa username bo'lmasa - joyida so'rab, kiritgach roster picker avtomatik ochiladi.
+  // Aloqa username bo'lmasa - joyida so'rab, kiritgach davom etadi.
   if (!user.contactUsername) {
     ctx.session ||= {};
     ctx.session.await = "register:contact-username";
@@ -120,7 +152,7 @@ export const handleStartRegister = async (ctx) => {
     return;
   }
 
-  await openRosterPicker(ctx, tournamentId);
+  await runSponsorGate(ctx, tournamentId);
 };
 
 // register:contact-username await holatini yakunlaydi (team.handler dispatcher chaqiradi).
@@ -147,7 +179,7 @@ export const completeRegisterContactUsername = async (ctx, text) => {
   }
 
   await ctx.reply(`✅ Aloqa username saqlandi: @${username}`);
-  if (tournamentId) await openRosterPicker(ctx, tournamentId);
+  if (tournamentId) await runSponsorGate(ctx, tournamentId);
 };
 
 const getState = (ctx) => ctx.session?.roster || null;
@@ -287,6 +319,40 @@ export const handleSlotBack = async (ctx) => {
   });
 };
 
+// Ro'yxatdan o'tishni yakunlaydi (day/timeSlot sessiyada saqlangan bo'lishi kerak).
+// handleSlotTime va handleSubCheck (qayta tekshirish) ikkalasi ham shuni ishlatadi.
+const finishRegistration = async (ctx, state) => {
+  try {
+    await registerForTournament(
+      ctx.from.id,
+      state.tournamentId,
+      state.roster,
+      state.lastDay,
+      state.lastTimeSlot,
+    );
+    ctx.session.roster = null;
+    await ctx.editMessageText(
+      `✅ <b>${state.tournamentTitle}</b> turniriga ro'yxatdan o'tildi.`,
+      { parse_mode: "HTML" },
+    );
+    await ctx.reply("Kabinet:", { reply_markup: cabinetKeyboard });
+  } catch (err) {
+    const data = err?.response?.data;
+    // Homiy kanal obunasi "Ro'yxatdan o'tish" bosilganda erta tekshiriladi; bu yerda faqat
+    // maxfiy guruh (leader-only) qoladi. Sponsor xatosi kelsa - umumiy xabarga tushadi.
+    if (data?.secretGroup?.url) {
+      await ctx.editMessageText(
+        "❗ Avval ushbu turnirning maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
+        { reply_markup: buildSecretGroupKeyboard(data.secretGroup) },
+      );
+      return;
+    }
+    const message = data?.message || "Ro'yxatdan o'tishda xato";
+    await ctx.reply(message, { reply_markup: cabinetKeyboard });
+    logger.warn({ err: err.message }, "register failed");
+  }
+};
+
 // slottime:<day>:<timeSlot> - time chosen, finalize the registration.
 export const handleSlotTime = async (ctx) => {
   const state = getState(ctx);
@@ -295,42 +361,19 @@ export const handleSlotTime = async (ctx) => {
     return;
   }
   const [, day, timeSlot] = ctx.callbackQuery.data.split(":").map(Number);
+  state.lastDay = day;
+  state.lastTimeSlot = timeSlot;
+  await ctx.answerCallbackQuery();
+  await finishRegistration(ctx, state);
+};
 
-  try {
-    await registerForTournament(ctx.from.id, state.tournamentId, state.roster, day, timeSlot);
-    ctx.session.roster = null;
-    await ctx.answerCallbackQuery({ text: "Yuborildi" });
-    await ctx.editMessageText(
-      `✅ <b>${state.tournamentTitle}</b> turniriga ro'yxatdan o'tildi.`,
-      { parse_mode: "HTML" },
-    );
-    await ctx.reply("Kabinet:", { reply_markup: cabinetKeyboard });
-  } catch (err) {
-    const data = err?.response?.data;
-    if (Array.isArray(data?.details) && data.details.length) {
-      await ctx.answerCallbackQuery({
-        text: "Avval kanallarga obuna bo'ling",
-        show_alert: true,
-      });
-      await ctx.editMessageText(
-        "❗ Quyidagi homiy kanallarga obuna bo'ling va qaytadan urinib ko'ring:",
-        { reply_markup: buildSponsorChannelsKeyboard(data.details) },
-      );
-      return;
-    }
-    if (data?.secretGroup?.url) {
-      await ctx.answerCallbackQuery({
-        text: "Avval maxfiy guruhga qo'shiling",
-        show_alert: true,
-      });
-      await ctx.editMessageText(
-        "❗ Avval ushbu turnirning maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
-        { reply_markup: buildSecretGroupKeyboard(data.secretGroup) },
-      );
-      return;
-    }
-    const message = data?.message || "Ro'yxatdan o'tishda xato";
-    await ctx.answerCallbackQuery({ text: message, show_alert: true });
-    logger.warn({ err: err.message }, "register failed");
+// subcheck - obunani qayta tekshiradi; hamma obuna bo'lsa roster picker ochiladi.
+export const handleSubCheck = async (ctx) => {
+  const tournamentId = ctx.session?.sponsorTournamentId;
+  if (!tournamentId) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
+    return;
   }
+  await ctx.answerCallbackQuery({ text: "Tekshirilmoqda..." });
+  await runSponsorGate(ctx, tournamentId, { edit: true });
 };

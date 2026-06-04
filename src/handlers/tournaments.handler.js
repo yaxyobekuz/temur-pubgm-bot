@@ -56,12 +56,7 @@ const formatTournamentCard = (t) => {
     lines.push("", `Xaritalar: ${t.maps.join(", ")}`);
   }
 
-  if (t.sponsorChannels?.length) {
-    lines.push("", "<b>Homiy kanallar (obuna shart):</b>");
-    for (const c of t.sponsorChannels) {
-      lines.push(`• <a href="${c.url}">${c.title}</a>`);
-    }
-  }
+  // Homiy kanallar bu yerda ko'rsatilmaydi - "Ro'yxatdan o'tish" bosilganda chiqadi.
   return lines.join("\n");
 };
 
