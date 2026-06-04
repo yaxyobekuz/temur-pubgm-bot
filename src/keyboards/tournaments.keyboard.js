@@ -62,3 +62,29 @@ export const buildSecretGroupKeyboard = (group) => {
   if (group?.url) kb.url(group.title || "Maxfiy guruh", group.url);
   return kb;
 };
+
+// Cascading slot selection step 1: pick a day that still has free spots.
+// openSlots = { days: [{ day, label, timeSlots: [...] }] }. `p` is the callback prefix
+// ("slot" for registration, "place" for advanced/VIP placement).
+export const buildDayPickerKeyboard = (openSlots = {}, p = "slot") => {
+  const kb = new InlineKeyboard();
+  for (const d of openSlots.days || []) {
+    kb.text(d.label || `${d.day}-kun`, `${p}day:${d.day}`).row();
+  }
+  kb.text("❌ Bekor qilish", `${p}cancel`);
+  return kb;
+};
+
+// Cascading slot selection step 2: pick a time slot within the chosen day.
+// Uses the concrete time label from the server (`t.label`/`t.time`), with a numbered fallback.
+export const buildTimePickerKeyboard = (day, openSlots = {}, p = "slot") => {
+  const kb = new InlineKeyboard();
+  const dayEntry = (openSlots.days || []).find((d) => d.day === day);
+  for (const t of dayEntry?.timeSlots || []) {
+    const label = t.label || t.time || `${t.timeSlot}-vaqt`;
+    kb.text(`${label} (${t.freeSpots})`, `${p}time:${day}:${t.timeSlot}`).row();
+  }
+  kb.text("⬅️ Orqaga", `${p}back`).row();
+  kb.text("❌ Bekor qilish", `${p}cancel`);
+  return kb;
+};
