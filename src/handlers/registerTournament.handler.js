@@ -1,6 +1,7 @@
 import {
   getTournamentById,
   fetchMyTeam,
+  fetchOpenSlots,
   registerForTournament,
   updateContactUsername,
   fetchMe,
@@ -9,6 +10,8 @@ import {
   buildRosterPickerKeyboard,
   buildSponsorChannelsKeyboard,
   buildSecretGroupKeyboard,
+  buildDayPickerKeyboard,
+  buildTimePickerKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
 import { parseUsername } from "../utils/parseUsername.js";
@@ -229,14 +232,72 @@ export const handleRosterSubmit = async (ctx) => {
     return;
   }
 
-  const roster = Object.entries(state.slots).map(([user, slot], i) => ({
+  state.roster = Object.entries(state.slots).map(([user, slot], i) => ({
     user,
     slot,
     position: i,
   }));
 
+  // Load the open day/time slots and move to the cascading slot picker.
+  let openSlots;
   try {
-    await registerForTournament(ctx.from.id, state.tournamentId, roster);
+    openSlots = await fetchOpenSlots(state.tournamentId);
+  } catch (err) {
+    logger.warn({ err: err.message }, "fetchOpenSlots failed");
+    await ctx.answerCallbackQuery({ text: "Bo'sh vaqtlarni yuklab bo'lmadi", show_alert: true });
+    return;
+  }
+  if (!openSlots?.days?.length) {
+    await ctx.answerCallbackQuery({ text: "Bo'sh joy qolmadi", show_alert: true });
+    await ctx.editMessageText("Afsuski, bu turnirda bo'sh joy qolmadi.");
+    return;
+  }
+
+  state.openSlots = openSlots;
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText("Qaysi kun siz uchun qulay? Bo'sh kunni tanlang:", {
+    reply_markup: buildDayPickerKeyboard(openSlots),
+  });
+};
+
+// slotday:<day> - day chosen, show the time picker for that day.
+export const handleSlotDay = async (ctx) => {
+  const state = getState(ctx);
+  if (!state?.roster) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
+    return;
+  }
+  const day = Number(ctx.callbackQuery.data.split(":")[1]);
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText("Endi bo'sh vaqtni tanlang:", {
+    reply_markup: buildTimePickerKeyboard(day, state.openSlots),
+  });
+};
+
+// slot:back - return to the day picker.
+export const handleSlotBack = async (ctx) => {
+  const state = getState(ctx);
+  if (!state?.openSlots) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
+    return;
+  }
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText("Bo'sh kunni tanlang:", {
+    reply_markup: buildDayPickerKeyboard(state.openSlots),
+  });
+};
+
+// slottime:<day>:<timeSlot> - time chosen, finalize the registration.
+export const handleSlotTime = async (ctx) => {
+  const state = getState(ctx);
+  if (!state?.roster) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
+    return;
+  }
+  const [, day, timeSlot] = ctx.callbackQuery.data.split(":").map(Number);
+
+  try {
+    await registerForTournament(ctx.from.id, state.tournamentId, state.roster, day, timeSlot);
     ctx.session.roster = null;
     await ctx.answerCallbackQuery({ text: "Yuborildi" });
     await ctx.editMessageText(
