@@ -5,6 +5,7 @@ import {
 import {
   buildDayPickerKeyboard,
   buildTimePickerKeyboard,
+  buildSecretGroupKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
 import logger from "../config/logger.js";
@@ -125,7 +126,17 @@ export const handlePlaceTime = async (ctx) => {
     );
     await ctx.reply("Kabinet:", { reply_markup: cabinetKeyboard });
   } catch (err) {
-    const message = err?.response?.data?.message || "Joy tanlashda xato";
+    const data = err?.response?.data;
+    // The chosen group's secret group requires the leader's membership first.
+    if (data?.secretGroup?.url) {
+      await ctx.answerCallbackQuery();
+      await ctx.editMessageText(
+        "❗ Avval ushbu bosqich guruhining maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
+        { reply_markup: buildSecretGroupKeyboard(data.secretGroup) },
+      );
+      return;
+    }
+    const message = data?.message || "Joy tanlashda xato";
     await ctx.answerCallbackQuery({ text: message, show_alert: true });
     logger.warn({ err: err.message }, "placeIntoStage failed");
   }
