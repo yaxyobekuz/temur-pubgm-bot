@@ -1,4 +1,4 @@
-import { InlineKeyboard, InputFile } from "grammy";
+import { InlineKeyboard } from "grammy";
 import {
   leaderTeamKeyboard,
   playerTeamKeyboard,
@@ -16,24 +16,10 @@ import {
   updateContactUsername,
 } from "../services/backend.service.js";
 import { parseUsername } from "../utils/parseUsername.js";
+import { fetchAsInputFile } from "../utils/media.js";
 import { completeRegisterContactUsername } from "./registerTournament.handler.js";
 import { env } from "../config/env.js";
 import logger from "../config/logger.js";
-
-// API_BASE_URL "http://host:5000/api" → "http://host:5000". Static fayllar `/api` ostida emas.
-const SERVER_ORIGIN = env.API_BASE_URL.replace(/\/api\/?$/, "");
-const toAbsolute = (url) =>
-  /^https?:\/\//i.test(url) ? url : `${SERVER_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
-
-// Telegram can't fetch localhost; the bot downloads the logo and sends it as a buffer.
-const fetchLogoAsInputFile = async (logoUrl) => {
-  const url = toAbsolute(logoUrl);
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`logo fetch failed: ${resp.status}`);
-  const buf = Buffer.from(await resp.arrayBuffer());
-  const name = url.split("/").pop()?.split("?")[0] || "logo.jpg";
-  return new InputFile(buf, name);
-};
 
 const memberLine = (m, leaderId) => {
   const name =
@@ -102,7 +88,7 @@ export const showTeam = async (ctx) => {
     }
     if (team.logo) {
       try {
-        await ctx.replyWithPhoto(await fetchLogoAsInputFile(team.logo), photoOpts);
+        await ctx.replyWithPhoto(await fetchAsInputFile(team.logo, "logo.jpg"), photoOpts);
         return;
       } catch (err) {
         logger.warn({ err: err.message }, "team logo photo failed, falling back to text");
