@@ -53,13 +53,25 @@ export const listOpenTournaments = () =>
 export const getTournamentById = (id) =>
   api.get(`/bot/tournaments/${id}`).then((r) => r.data.data);
 
-export const registerForTournament = (tgId, id, roster) =>
+export const fetchOpenSlots = (id) =>
+  api.get(`/bot/tournaments/${id}/open-slots`).then((r) => r.data.data);
+
+export const registerForTournament = (tgId, id, roster, day, timeSlot) =>
   api
-    .post(`/bot/tournaments/${id}/register`, { tgId, roster })
+    .post(`/bot/tournaments/${id}/register`, { tgId, roster, day, timeSlot })
     .then((r) => r.data.data);
 
 export const listMyRegistrations = (tgId) =>
   api.get("/bot/registrations", { params: { tgId } }).then((r) => r.data.data);
+
+// Team advanced/VIP-invited to a stage but not yet placed: returns the pending placement + slots.
+export const fetchPendingPlacement = (tgId) =>
+  api.get("/bot/registrations/pending-placement", { params: { tgId } }).then((r) => r.data.data);
+
+export const placeIntoStage = (tgId, registrationId, day, timeSlot) =>
+  api
+    .post(`/bot/registrations/${registrationId}/place`, { tgId, day, timeSlot })
+    .then((r) => r.data.data);
 
 // --- Help links ------------------------------------------------------------
 
