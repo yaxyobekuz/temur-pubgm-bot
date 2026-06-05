@@ -8,7 +8,6 @@ import {
   fetchMe,
 } from "../services/backend.service.js";
 import {
-  buildRosterPickerKeyboard,
   buildSponsorChannelsKeyboard,
   buildSecretGroupKeyboard,
   buildDayPickerKeyboard,
@@ -16,29 +15,27 @@ import {
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
 import { sendBannerPhoto } from "./tournaments.handler.js";
+import {
+  MODE_ROSTER_SIZE,
+  countMain,
+  buildRosterStatusText,
+  buildRosterKeyboard,
+  toggleSlot,
+  slotsToRoster,
+} from "./rosterPicker.shared.js";
 import { parseUsername } from "../utils/parseUsername.js";
 import logger from "../config/logger.js";
 
-const MODE_ROSTER_SIZE = { solo: 1, duo: 2, squad: 4 };
+const buildStatusText = (tournament, required, slots) =>
+  buildRosterStatusText({
+    heading: `📝 <b>${tournament.title}</b> - ro'yxatdan o'tish`,
+    mode: tournament.mode,
+    required,
+    slots,
+  });
 
-const buildStatusText = (tournament, required, slots) => {
-  const main = Object.values(slots).filter((s) => s === "main").length;
-  const reserve = Object.values(slots).filter((s) => s === "reserve").length;
-  return [
-    `📝 <b>${tournament.title}</b> - ro'yxatdan o'tish`,
-    "",
-    `Rejim: <b>${tournament.mode}</b> (aynan <b>${required}</b> ta asosiy o'yinchi kerak)`,
-    `Tanlangan asosiy: <b>${main}/${required}</b> • Zaxira: <b>${reserve}</b>`,
-    "",
-    "Har bir a'zoni bosib slotni almashtirib turing.",
-    "Belgilar: <b>★</b> asosiy · <b>◌</b> zaxira · <b>·</b> tanlanmagan",
-  ].join("\n");
-};
-
-const renderKeyboard = (members, slots, required) => {
-  const main = Object.values(slots).filter((s) => s === "main").length;
-  return buildRosterPickerKeyboard(members, slots, main === required);
-};
+const renderKeyboard = (members, slots, required) =>
+  buildRosterKeyboard(members, slots, required);
 
 // Roster picker'ni ochadi - turnir/komanda yuklab, slot tanlash holatini sessiyaga yozadi.
 const openRosterPicker = async (ctx, tournamentId) => {
@@ -118,7 +115,7 @@ const runSponsorGate = async (ctx, tournamentId, { edit = false } = {}) => {
   ctx.session ||= {};
   ctx.session.sponsorTournamentId = tournamentId;
   const names = (res.members || []).map((m) => `- ${m.name}`).join("\n");
-  const text = `❗ Quyidagi a'zolar homiy kanallarga obuna emas:\n<b>${names || "-"}</b>\n\nObuna bo'lib, "🔄 Tekshirish"ni bosing:`;
+  const text = `❗ Quyidagi a'zolar homiy kanallarga obuna emas:\n<b>${names || "-"}</b>\n\n⚠️ Diqqat! Homiy kanallardan chiqib ketgan taqdirda, siz va jamoangiz turnirdan chetlatilishingiz mumkin.\n\nObuna bo'lib, "🔄 Tekshirish"ni bosing:`;
   const opts = {
     parse_mode: "HTML",
     reply_markup: buildSponsorChannelsKeyboard(res.channels),
@@ -209,15 +206,7 @@ export const handleSlotToggle = async (ctx) => {
   }
 
   const required = MODE_ROSTER_SIZE[state.tournamentMode] || 0;
-  const cur = state.slots[userId];
-  if (!cur) state.slots[userId] = "main";
-  else if (cur === "main") state.slots[userId] = "reserve";
-  else delete state.slots[userId];
-
-  const main = Object.values(state.slots).filter((s) => s === "main").length;
-  if (main > required && state.slots[userId] === "main") {
-    state.slots[userId] = "reserve";
-  }
+  toggleSlot(state.slots, userId, required);
 
   await ctx.answerCallbackQuery();
   try {
@@ -259,8 +248,7 @@ export const handleRosterSubmit = async (ctx) => {
   }
 
   const required = MODE_ROSTER_SIZE[state.tournamentMode] || 0;
-  const main = Object.values(state.slots).filter((s) => s === "main").length;
-  if (main !== required) {
+  if (countMain(state.slots) !== required) {
     await ctx.answerCallbackQuery({
       text: `Aynan ${required} ta asosiy o'yinchi tanlang`,
       show_alert: true,
@@ -268,11 +256,7 @@ export const handleRosterSubmit = async (ctx) => {
     return;
   }
 
-  state.roster = Object.entries(state.slots).map(([user, slot], i) => ({
-    user,
-    slot,
-    position: i,
-  }));
+  state.roster = slotsToRoster(state.slots);
 
   // Load the open day/time slots and move to the cascading slot picker.
   let openSlots;

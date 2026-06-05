@@ -31,19 +31,25 @@ const slotLabel = (slot) => {
   return "·";
 };
 
-// Roster picker - har a'zoga 3 ta toggle tugma: Asosiy, Zaxira, Yo'q
-export const buildRosterPickerKeyboard = (members = [], slots = {}, canSubmit = false) => {
+// Roster picker - har a'zoga 3 ta toggle tugma: Asosiy, Zaxira, Yo'q.
+// `cb` callback prefikslari: register oqimi uchun default, VIP placement uchun "placeslot"/...
+export const buildRosterPickerKeyboard = (
+  members = [],
+  slots = {},
+  canSubmit = false,
+  cb = { toggle: "slot", submit: "roster:submit", cancel: "roster:cancel" },
+) => {
   const kb = new InlineKeyboard();
   for (const m of members) {
     const slot = slots[String(m._id)] || null;
     const name =
       [m.firstName, m.lastName].filter(Boolean).join(" ") || m.tgUsername || "O'yinchi";
-    kb.text(`${slotLabel(slot)} ${name}`, `slot:${m._id}`).row();
+    kb.text(`${slotLabel(slot)} ${name}`, `${cb.toggle}:${m._id}`).row();
   }
   if (canSubmit) {
-    kb.text("✅ Yuborish", "roster:submit");
+    kb.text("✅ Yuborish", cb.submit);
   }
-  kb.text("❌ Bekor qilish", "roster:cancel");
+  kb.text("❌ Bekor qilish", cb.cancel);
   return kb;
 };
 
