@@ -56,6 +56,8 @@ import {
 } from "./handlers/registerTournament.handler.js";
 import {
   showPendingPlacement,
+  handlePlaceSlot,
+  handlePlaceRosterSubmit,
   handlePlaceDay,
   handlePlaceTime,
   handlePlaceBack,
@@ -137,6 +139,10 @@ bot.callbackQuery(/^placeday:/, handlePlaceDay);
 bot.callbackQuery(/^placetime:/, handlePlaceTime);
 bot.callbackQuery("placeback", handlePlaceBack);
 bot.callbackQuery("placecancel", handlePlaceCancel);
+// VIP placement roster picker (keep AFTER the specific place* routes above).
+bot.callbackQuery("placeroster:submit", handlePlaceRosterSubmit);
+bot.callbackQuery("placeroster:cancel", handlePlaceCancel);
+bot.callbackQuery(/^placeslot:/, handlePlaceSlot);
 bot.callbackQuery("noop", handleNoopCallback);
 
 bot.catch(errorHandler);

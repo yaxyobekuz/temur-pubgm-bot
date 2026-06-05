@@ -78,12 +78,17 @@ export const listMyRegistrations = (tgId) =>
 export const fetchPendingPlacement = (tgId) =>
   api.get("/bot/registrations/pending-placement", { params: { tgId } }).then((r) => r.data.data);
 
-export const placeIntoStage = (tgId, registrationId, day, timeSlot) =>
+export const placeIntoStage = (tgId, registrationId, day, timeSlot, roster) =>
   api
-    .post(`/bot/registrations/${registrationId}/place`, { tgId, day, timeSlot })
+    .post(`/bot/registrations/${registrationId}/place`, { tgId, day, timeSlot, roster })
     .then((r) => r.data.data);
 
 // --- Help links ------------------------------------------------------------
 
 export const fetchHelpLinks = () =>
   api.get("/bot/help-links").then((r) => r.data.data);
+
+// --- Settings --------------------------------------------------------------
+
+export const fetchSettings = () =>
+  api.get("/bot/settings").then((r) => r.data.data);

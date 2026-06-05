@@ -12,7 +12,11 @@ export const buildTournamentsListKeyboard = (tournaments = []) => {
 };
 
 // `canRegister` true bo'lsa "Ro'yxatdan o'tish" tugmasi qo'shiladi (faqat leader uchun).
-export const buildTournamentDetailKeyboard = (tournament, { canRegister, alreadyRegistered }) => {
+// `vipAdminUrl` bo'lsa "VIP slot olish" havola tugmasi ko'rinadi (admin bilan bog'lanish).
+export const buildTournamentDetailKeyboard = (
+  tournament,
+  { canRegister, alreadyRegistered, vipAdminUrl } = {},
+) => {
   const kb = new InlineKeyboard();
   if (alreadyRegistered) {
     kb.text("✅ Ro'yxatdasiz", "noop");
@@ -20,6 +24,9 @@ export const buildTournamentDetailKeyboard = (tournament, { canRegister, already
     kb.text("📝 Ro'yxatdan o'tish", `register:${tournament._id}`);
   } else {
     kb.text("ℹ️ Faqat leader ro'yxatdan o'tkazadi", "noop");
+  }
+  if (vipAdminUrl) {
+    kb.row().url("🎟 VIP slot olish", vipAdminUrl);
   }
   kb.row().text("⬅️ Orqaga", "tour:back");
   return kb;

@@ -3,6 +3,7 @@ import {
   getTournamentById,
   listMyRegistrations,
   setTournamentBannerFileId,
+  fetchSettings,
 } from "../services/backend.service.js";
 import {
   buildTournamentsListKeyboard,
@@ -177,9 +178,10 @@ export const handleTournamentDetail = async (ctx) => {
   await ctx.answerCallbackQuery();
   const user = ctx.state?.user;
   try {
-    const [tournament, myRegs] = await Promise.all([
+    const [tournament, myRegs, settings] = await Promise.all([
       getTournamentById(id),
       listMyRegistrations(ctx.from.id).catch(() => []),
+      fetchSettings().catch(() => ({})),
     ]);
     const alreadyRegistered = myRegs.some(
       (r) =>
@@ -190,6 +192,7 @@ export const handleTournamentDetail = async (ctx) => {
     const replyMarkup = buildTournamentDetailKeyboard(tournament, {
       canRegister,
       alreadyRegistered,
+      vipAdminUrl: settings?.vipAdminUrl,
     });
 
     // List xabarini almashtirib, banner bilan turnir kartasini yuboramiz.
@@ -239,7 +242,12 @@ export const showMyRegistrations = async (ctx) => {
     }
     // Advanced/VIP but not yet placed into the next stage.
     if ((r.eligibleStage || 1) > (r.placedStage || 0)) {
-      lines.push("   ⚠️ Keyingi bosqich uchun joy tanlang: 🎟 Bosqich slotini tanlash");
+      const isVip = r.nextPlacementKind === "vip";
+      lines.push(
+        isVip
+          ? "   🎟 VIP slot - joy tanlang: 🎟 Bosqich slotini tanlash"
+          : "   ⚠️ Keyingi bosqich uchun joy tanlang: 🎟 Bosqich slotini tanlash",
+      );
     }
     if (r.tournament?.startDate) {
       lines.push(`   ${formatDate(r.tournament.startDate)}`);
