@@ -1,5 +1,7 @@
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
 
+const ROLE_LABEL = { leader: "Komanda sardori", player: "O'yinchi" };
+
 export const showCabinet = async (ctx, message = "Kabinet:") => {
   await ctx.reply(message, { reply_markup: cabinetKeyboard });
 };
@@ -14,7 +16,7 @@ export const profileHandler = async (ctx) => {
   const lines = [
     `👤 *Profil*`,
     `Ism: ${user.firstName} ${user.lastName || ""}`.trim(),
-    `Rol: ${user.role}`,
+    `Rol: ${ROLE_LABEL[user.role] || user.role}`,
     `Mintaqa: ${region}`,
     `Telefon: ${user.contactPhone || "-"}`,
   ];

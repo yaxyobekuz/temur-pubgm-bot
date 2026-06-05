@@ -6,17 +6,18 @@ import logger from "../config/logger.js";
 export const authContext = async (ctx, next) => {
   const tgId = ctx.from?.id;
   if (!tgId) return next();
+  ctx.state ||= {};
+  ctx.state.user = null;
+  ctx.state.userError = false;
   try {
-    ctx.state ||= {};
     ctx.state.user = await fetchMe(tgId);
   } catch (err) {
-    if (err?.response?.status === 404) {
-      ctx.state ||= {};
-      ctx.state.user = null;
-    } else {
+    // 404 = haqiqatan ro'yxatdan o'tmagan (registratsiya kerak).
+    // Boshqa xato (server o'chiq/tarmoq/500) = userError - mavjud foydalanuvchini
+    // registratsiyaga majburlamaslik uchun handlerlar buni tekshiradi.
+    if (err?.response?.status !== 404) {
       logger.warn({ err: err.message, tgId }, "authContext fetch failed");
-      ctx.state ||= {};
-      ctx.state.user = null;
+      ctx.state.userError = true;
     }
   }
   await next();

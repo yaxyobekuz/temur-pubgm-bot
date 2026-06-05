@@ -3,6 +3,8 @@ import { acceptInvite, fetchMe } from "../services/backend.service.js";
 import { REGISTER_CONVERSATION } from "./register.handler.js";
 import logger from "../config/logger.js";
 
+const ROLE_LABEL = { leader: "Komanda sardori", player: "O'yinchi" };
+
 const startHandler = async (ctx) => {
   // Drop any in-flight conversation so a fresh /start doesn't stack handlers
   // (otherwise each old conversation answers with "Iltimos, mintaqani tanlang").
@@ -12,6 +14,14 @@ const startHandler = async (ctx) => {
   const isTeamDeepLink = typeof payload === "string" && payload.startsWith("team_");
 
   const user = ctx.state?.user;
+
+  // Server bilan ulanishda muammo - mavjud foydalanuvchini registratsiyaga majburlamaymiz.
+  if (!user && ctx.state?.userError) {
+    await ctx.reply(
+      "Server bilan ulanishda muammo. Iltimos, birozdan so'ng /start ni qayta bosing.",
+    );
+    return;
+  }
 
   if (!user) {
     if (isTeamDeepLink) {
@@ -47,7 +57,7 @@ const startHandler = async (ctx) => {
   }
 
   await ctx.reply(
-    `Xush kelibsiz, ${user.firstName}!`,
+    `Xush kelibsiz, ${user.firstName}!\nRolingiz: ${ROLE_LABEL[user.role] || user.role}`,
     { reply_markup: cabinetKeyboard },
   );
 };
