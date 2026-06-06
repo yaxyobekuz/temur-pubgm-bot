@@ -97,7 +97,7 @@ export const buildTimePickerKeyboard = (day, openSlots = {}, p = "slot") => {
   const dayEntry = (openSlots.days || []).find((d) => d.day === day);
   for (const t of dayEntry?.timeSlots || []) {
     const label = t.label || t.time || `${t.timeSlot}-vaqt`;
-    kb.text(`${label} (${t.freeSpots})`, `${p}time:${day}:${t.timeSlot}`).row();
+    kb.text(label, `${p}time:${day}:${t.timeSlot}`).row();
   }
   kb.text("⬅️ Orqaga", `${p}back`).row();
   kb.text("❌ Bekor qilish", `${p}cancel`);
