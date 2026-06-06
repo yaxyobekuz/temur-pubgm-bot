@@ -35,10 +35,11 @@ const secretGate = (req, res, next) => {
 };
 
 // Build an inline keyboard from { text, url } buttons (broadcasts use this).
+// Har bir tugma alohida qatorda (homiy kanallar bir qatorga tiqilmasligi uchun).
 const buildKeyboard = (buttons) => {
   if (!Array.isArray(buttons) || !buttons.length) return undefined;
   return {
-    inline_keyboard: [buttons.map((b) => ({ text: b.text, url: b.url }))],
+    inline_keyboard: buttons.map((b) => [{ text: b.text, url: b.url }]),
   };
 };
 
