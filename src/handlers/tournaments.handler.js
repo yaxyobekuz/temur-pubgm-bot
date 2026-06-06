@@ -4,10 +4,13 @@ import {
   listMyRegistrations,
   setTournamentBannerFileId,
   fetchSettings,
+  getSelfSponsorChannels,
 } from "../services/backend.service.js";
 import {
   buildTournamentsListKeyboard,
   buildTournamentDetailKeyboard,
+  buildMyRegistrationsKeyboard,
+  buildSelfSponsorKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { fetchAsInputFile } from "../utils/media.js";
 import logger from "../config/logger.js";
@@ -253,5 +256,39 @@ export const showMyRegistrations = async (ctx) => {
       lines.push(`   ${formatDate(r.tournament.startDate)}`);
     }
   }
-  await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+  await ctx.reply(lines.join("\n"), {
+    parse_mode: "HTML",
+    reply_markup: buildMyRegistrationsKeyboard(items),
+  });
+};
+
+// sponsorinfo:<tournamentId> - "Mening turnirlarim"dan homiy-kanal xabarini olish/tekshirish.
+export const handleSponsorInfo = async (ctx) => {
+  const tournamentId = ctx.callbackQuery.data.split(":")[1];
+  let data;
+  try {
+    data = await getSelfSponsorChannels(ctx.from.id, tournamentId);
+  } catch (err) {
+    logger.warn({ err: err.message }, "self sponsor check failed");
+    await ctx.answerCallbackQuery({
+      text: "Tekshirib bo'lmadi. Keyinroq urinib ko'ring.",
+      show_alert: true,
+    });
+    return;
+  }
+
+  if (data.ok) {
+    await ctx.answerCallbackQuery({
+      text: "✅ Siz barcha homiy kanallarga obuna bo'lgansiz",
+      show_alert: true,
+    });
+    return;
+  }
+
+  await ctx.answerCallbackQuery();
+  const text = `❗ <b>${data.tournamentTitle}</b> turniri homiy kanal(lar)iga obuna bo'ling:\n\n⚠️ Diqqat! Homiy kanallardan chiqib ketsangiz, siz va jamoangiz turnirdan chetlatilishingiz mumkin.`;
+  await ctx.reply(text, {
+    parse_mode: "HTML",
+    reply_markup: buildSelfSponsorKeyboard(data.channels, tournamentId),
+  });
 };

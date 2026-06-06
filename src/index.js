@@ -43,6 +43,7 @@ import {
   handleTournamentDetail,
   handleNoopCallback,
   showMyRegistrations,
+  handleSponsorInfo,
 } from "./handlers/tournaments.handler.js";
 import {
   handleStartRegister,
@@ -122,6 +123,8 @@ bot.callbackQuery(/^role:/, handleRoleCallback);
 bot.callbackQuery(/^setregion:/, handleRegionCallback);
 bot.callbackQuery(/^kick:/, handleKickCallback);
 bot.callbackQuery(/^tour:/, handleTournamentDetail);
+// "Mening turnirlarim"dan homiy-kanal xabarini olish/qayta tekshirish.
+bot.callbackQuery(/^sponsorinfo:/, handleSponsorInfo);
 bot.callbackQuery(/^register:/, handleStartRegister);
 bot.callbackQuery("roster:cancel", handleRosterCancel);
 bot.callbackQuery("roster:submit", handleRosterSubmit);

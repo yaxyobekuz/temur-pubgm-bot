@@ -66,6 +66,16 @@ export const checkSponsorMembership = (tgId, id) =>
     .get(`/bot/tournaments/${id}/sponsor-check`, { params: { tgId } })
     .then((r) => r.data.data);
 
+// Foydalanuvchining ushbu turnir uchun obuna bo'lmagan homiy kanallari ("Mening turnirlarim").
+export const getSelfSponsorChannels = (tgId, id) =>
+  api
+    .get(`/bot/tournaments/${id}/sponsor-self`, { params: { tgId } })
+    .then((r) => r.data.data);
+
+// /start: yetkazilmagan homiy-kanal eslatmalarini qayta yuborishni so'raydi (best-effort).
+export const resendSponsorReminders = (tgId) =>
+  api.post("/bot/users/sponsor-reminders/resend", { tgId }).then((r) => r.data.data);
+
 export const registerForTournament = (tgId, id, roster, day, timeSlot) =>
   api
     .post(`/bot/tournaments/${id}/register`, { tgId, roster, day, timeSlot })

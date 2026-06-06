@@ -1,5 +1,5 @@
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
-import { acceptInvite, fetchMe } from "../services/backend.service.js";
+import { acceptInvite, fetchMe, resendSponsorReminders } from "../services/backend.service.js";
 import { REGISTER_CONVERSATION } from "./register.handler.js";
 import logger from "../config/logger.js";
 
@@ -39,6 +39,11 @@ const startHandler = async (ctx) => {
     await ctx.conversation.enter(REGISTER_CONVERSATION);
     return;
   }
+
+  // Bot bloklangani sabab yetkazilmagan homiy-kanal eslatmalari bo'lsa - hozir qayta yuboriladi.
+  resendSponsorReminders(ctx.from.id).catch((err) =>
+    logger.warn({ err: err.message }, "resendSponsorReminders failed"),
+  );
 
   if (isTeamDeepLink) {
     try {

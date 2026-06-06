@@ -78,6 +78,29 @@ export const buildSecretGroupKeyboard = (group) => {
   return kb;
 };
 
+// "Mening turnirlarim" ostidagi tugmalar: har aktiv turnir uchun homiy-kanal eslatmasini olish.
+const ACTIVE_TOURNAMENT_STATUSES = ["pending", "ongoing"];
+export const buildMyRegistrationsKeyboard = (registrations = []) => {
+  const kb = new InlineKeyboard();
+  let has = false;
+  for (const r of registrations) {
+    const t = r.tournament;
+    if (r.status !== "registered") continue;
+    if (!ACTIVE_TOURNAMENT_STATUSES.includes(t?.status)) continue;
+    kb.text(`🔔 ${t.title} - homiy kanallar`, `sponsorinfo:${t._id}`).row();
+    has = true;
+  }
+  return has ? kb : undefined;
+};
+
+// "Mening turnirlarim" homiy-kanal xabari: kanal havolalari + o'zini qayta tekshirish tugmasi.
+export const buildSelfSponsorKeyboard = (channels = [], tournamentId) => {
+  const kb = new InlineKeyboard();
+  for (const c of channels) kb.url(c.title || "Kanal", c.url).row();
+  kb.text("🔄 Tekshirish", `sponsorinfo:${tournamentId}`);
+  return kb;
+};
+
 // Cascading slot selection step 1: pick a day that still has free spots.
 // openSlots = { days: [{ day, label, timeSlots: [...] }] }. `p` is the callback prefix
 // ("slot" for registration, "place" for advanced/VIP placement).
