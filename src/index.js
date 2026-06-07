@@ -66,8 +66,14 @@ import {
   handlePlaceCancel,
 } from "./handlers/placement.handler.js";
 import { handleIdCommand, handleTeamsCommand } from "./handlers/secretGroup.handler.js";
+import { cleanupJoinLeaveMessages } from "./handlers/groupCleanup.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
+
+// Delete "joined/left the group" service messages early - before session/auth - so they're
+// cleaned up without any backend lookup. Does not call next(): the update stops here.
+bot.on("message:new_chat_members", cleanupJoinLeaveMessages);
+bot.on("message:left_chat_member", cleanupJoinLeaveMessages);
 
 bot.use(
   session({
