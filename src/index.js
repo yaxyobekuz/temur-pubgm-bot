@@ -65,7 +65,7 @@ import {
   handlePlaceBack,
   handlePlaceCancel,
 } from "./handlers/placement.handler.js";
-import { handleIdCommand } from "./handlers/secretGroup.handler.js";
+import { handleIdCommand, handleTeamsCommand } from "./handlers/secretGroup.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
 
@@ -94,6 +94,8 @@ bot.command("start", startHandler);
 bot.command("help", helpHandler);
 // In a group: replies with the chat_id (secret group setup). Requires the bot to be admin.
 bot.command("id", handleIdCommand);
+// In a secret group: lists all teams placed into this group with their lobby slots.
+bot.command("teams", handleTeamsCommand);
 
 // Cabinet menu
 bot.hears("👤 Profil", profileHandler);

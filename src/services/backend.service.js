@@ -93,6 +93,14 @@ export const placeIntoStage = (tgId, registrationId, day, timeSlot, roster) =>
     .post(`/bot/registrations/${registrationId}/place`, { tgId, day, timeSlot, roster })
     .then((r) => r.data.data);
 
+// --- Secret group ----------------------------------------------------------
+
+// Maxfiy guruh chatId orqali shu guruhga joylashgan jamoalar (slot bilan).
+export const fetchSecretGroupTeams = (chatId) =>
+  api
+    .get("/bot/groups/teams-by-chat", { params: { chatId } })
+    .then((r) => r.data.data);
+
 // --- Help links ------------------------------------------------------------
 
 export const fetchHelpLinks = () =>
