@@ -328,10 +328,10 @@ const finishRegistration = async (ctx, state) => {
     const data = err?.response?.data;
     // Homiy kanal obunasi "Ro'yxatdan o'tish" bosilganda erta tekshiriladi; bu yerda faqat
     // maxfiy guruh (leader-only) qoladi. Sponsor xatosi kelsa - umumiy xabarga tushadi.
-    if (data?.secretGroup?.url) {
+    if (data?.details?.secretGroup?.url) {
       await ctx.editMessageText(
         "❗ Avval ushbu turnirning maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
-        { reply_markup: buildSecretGroupKeyboard(data.secretGroup) },
+        { reply_markup: buildSecretGroupKeyboard(data.details.secretGroup) },
       );
       return;
     }

@@ -215,11 +215,11 @@ export const handlePlaceTime = async (ctx) => {
   } catch (err) {
     const data = err?.response?.data;
     // The chosen group's secret group requires the leader's membership first.
-    if (data?.secretGroup?.url) {
+    if (data?.details?.secretGroup?.url) {
       await ctx.answerCallbackQuery();
       await ctx.editMessageText(
         "❗ Avval ushbu bosqich guruhining maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
-        { reply_markup: buildSecretGroupKeyboard(data.secretGroup) },
+        { reply_markup: buildSecretGroupKeyboard(data.details.secretGroup) },
       );
       return;
     }
