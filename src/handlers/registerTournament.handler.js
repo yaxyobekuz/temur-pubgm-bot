@@ -330,8 +330,8 @@ const finishRegistration = async (ctx, state) => {
     // maxfiy guruh (leader-only) qoladi. Sponsor xatosi kelsa - umumiy xabarga tushadi.
     if (data?.details?.secretGroup?.url) {
       await ctx.editMessageText(
-        "❗ Avval ushbu turnirning maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
-        { reply_markup: buildSecretGroupKeyboard(data.details.secretGroup) },
+        "❗ Avval ushbu turnirning maxfiy guruhiga qo'shiling, so'ng \"🔄 Tekshirish / Qayta urinish\"ni bosing:",
+        { reply_markup: buildSecretGroupKeyboard(data.details.secretGroup, "secretretry:reg") },
       );
       return;
     }
@@ -352,6 +352,18 @@ export const handleSlotTime = async (ctx) => {
   state.lastDay = day;
   state.lastTimeSlot = timeSlot;
   await ctx.answerCallbackQuery();
+  await finishRegistration(ctx, state);
+};
+
+// secretretry:reg - leader maxfiy guruhga qo'shilgach bosadi; saqlangan roster/kun/vaqt bilan
+// ro'yxatdan o'tishni qayta urinadi (hammasini qaytadan tanlamasdan).
+export const handleSecretRetryRegister = async (ctx) => {
+  const state = getState(ctx);
+  if (!state?.roster || state.lastDay == null || state.lastTimeSlot == null) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi. Qaytadan urinib ko'ring.", show_alert: true });
+    return;
+  }
+  await ctx.answerCallbackQuery({ text: "Tekshirilmoqda..." });
   await finishRegistration(ctx, state);
 };
 

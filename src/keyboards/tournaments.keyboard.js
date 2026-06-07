@@ -71,10 +71,13 @@ export const buildSponsorChannelsKeyboard = (channels = []) => {
   return kb;
 };
 
-// Secret group rejection - single URL button to join the private group.
-export const buildSecretGroupKeyboard = (group) => {
+// Secret group rejection - a URL button to join the private group, plus an optional
+// "qayta urinish" callback button so the leader can retry the same action right after joining
+// (without re-picking roster/day/time). `retryCb` is a static callback string.
+export const buildSecretGroupKeyboard = (group, retryCb) => {
   const kb = new InlineKeyboard();
   if (group?.url) kb.url(group.title || "Maxfiy guruh", group.url);
+  if (retryCb) kb.row().text("🔄 Tekshirish / Qayta urinish", retryCb);
   return kb;
 };
 

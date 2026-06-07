@@ -52,6 +52,7 @@ import {
   handleRosterCancel,
   handleRosterSubmit,
   handleSubCheck,
+  handleSecretRetryRegister,
   handleSlotDay,
   handleSlotTime,
   handleSlotBack,
@@ -62,6 +63,7 @@ import {
   handlePlaceRosterSubmit,
   handlePlaceDay,
   handlePlaceTime,
+  handleSecretRetryPlace,
   handlePlaceBack,
   handlePlaceCancel,
 } from "./handlers/placement.handler.js";
@@ -140,6 +142,8 @@ bot.callbackQuery("roster:cancel", handleRosterCancel);
 bot.callbackQuery("roster:submit", handleRosterSubmit);
 // Sponsor obunani qayta tekshirish (forced subscription) - o'tsa avtomatik davom etadi.
 bot.callbackQuery("subcheck", handleSubCheck);
+bot.callbackQuery("secretretry:reg", handleSecretRetryRegister);
+bot.callbackQuery("secretretry:place", handleSecretRetryPlace);
 // Stage-1 slot picker (cascading day -> time) during registration.
 bot.callbackQuery(/^slotday:/, handleSlotDay);
 bot.callbackQuery(/^slottime:/, handleSlotTime);

@@ -194,17 +194,12 @@ export const handlePlaceCancel = async (ctx) => {
   }
 };
 
-// placetime:<day>:<timeSlot> - finalize placement into the chosen slot.
-export const handlePlaceTime = async (ctx) => {
-  const state = getState(ctx);
-  if (!state) {
-    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
-    return;
-  }
-  const [, day, timeSlot] = ctx.callbackQuery.data.split(":").map(Number);
-
+// Shared placement attempt: uses the day/time saved on the session so both the initial pick and
+// the post-secret-group "qayta urinish" can run it. On the secret-group error it shows the join
+// link + a retry button (state is kept, so the leader needn't re-pick roster/day/time).
+const attemptPlacement = async (ctx, state) => {
   try {
-    await placeIntoStage(ctx.from.id, state.registrationId, day, timeSlot, state.roster);
+    await placeIntoStage(ctx.from.id, state.registrationId, state.lastDay, state.lastTimeSlot, state.roster);
     ctx.session.placement = null;
     await ctx.answerCallbackQuery({ text: "Joylashdingiz" });
     await ctx.editMessageText(
@@ -218,8 +213,8 @@ export const handlePlaceTime = async (ctx) => {
     if (data?.details?.secretGroup?.url) {
       await ctx.answerCallbackQuery();
       await ctx.editMessageText(
-        "❗ Avval ushbu bosqich guruhining maxfiy guruhiga qo'shiling va qaytadan urinib ko'ring:",
-        { reply_markup: buildSecretGroupKeyboard(data.details.secretGroup) },
+        "❗ Avval ushbu bosqich guruhining maxfiy guruhiga qo'shiling, so'ng \"🔄 Tekshirish / Qayta urinish\"ni bosing:",
+        { reply_markup: buildSecretGroupKeyboard(data.details.secretGroup, "secretretry:place") },
       );
       return;
     }
@@ -227,4 +222,28 @@ export const handlePlaceTime = async (ctx) => {
     await ctx.answerCallbackQuery({ text: message, show_alert: true });
     logger.warn({ err: err.message }, "placeIntoStage failed");
   }
+};
+
+// placetime:<day>:<timeSlot> - finalize placement into the chosen slot.
+export const handlePlaceTime = async (ctx) => {
+  const state = getState(ctx);
+  if (!state) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
+    return;
+  }
+  const [, day, timeSlot] = ctx.callbackQuery.data.split(":").map(Number);
+  state.lastDay = day;
+  state.lastTimeSlot = timeSlot;
+  await attemptPlacement(ctx, state);
+};
+
+// secretretry:place - leader maxfiy guruhga qo'shilgach bosadi; saqlangan kun/vaqt bilan
+// joy tanlashni qayta urinadi.
+export const handleSecretRetryPlace = async (ctx) => {
+  const state = getState(ctx);
+  if (!state || state.lastDay == null || state.lastTimeSlot == null) {
+    await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
+    return;
+  }
+  await attemptPlacement(ctx, state);
 };
