@@ -29,6 +29,7 @@ import {
   showTeam,
   startCreateTeam,
   startRenameTeam,
+  startSetTag,
   startSetLogo,
   startKickMember,
   handleKickCallback,
@@ -110,6 +111,7 @@ bot.hears("🔗 Aloqa username", askContactUsername);
 
 // Team submenu
 bot.hears("📛 Komanda nomini o'zgartirish", startRenameTeam);
+bot.hears("🏷 Tag", startSetTag);
 bot.hears("🖼 Logotip", startSetLogo);
 bot.hears("🔗 Taklif havolasi", handleShowInvite);
 bot.hears("♻️ Havolani yangilash", handleRegenerateInvite);

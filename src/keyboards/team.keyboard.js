@@ -2,6 +2,7 @@ import { Keyboard } from "grammy";
 
 export const leaderTeamKeyboard = new Keyboard()
   .text("📛 Komanda nomini o'zgartirish")
+  .text("🏷 Tag")
   .row()
   .text("🔗 Taklif havolasi")
   .text("♻️ Havolani yangilash")

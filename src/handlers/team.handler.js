@@ -33,8 +33,10 @@ const memberLine = (m, leaderId) => {
 
 const formatTeam = (team) => {
   const leaderId = team.leader?._id || team.leader;
+  const title = team.tag ? `👥 *[${team.tag}] ${team.name}*` : `👥 *${team.name}*`;
   const lines = [
-    `👥 *${team.name}*`,
+    title,
+    `🏷 Tag: ${team.tag || "—"}`,
     `A'zolar: ${team.members?.length || 0} / 100`,
     "",
     ...(team.members || []).map((m) => memberLine(m, leaderId)),
@@ -122,6 +124,17 @@ export const startRenameTeam = async (ctx) => {
   ctx.session ||= {};
   ctx.session.await = "team:rename";
   await ctx.reply("Yangi nomni yuboring:");
+};
+
+// "🏷 Tag" - set or change the team's short clan tag (also clears it with "-").
+export const startSetTag = async (ctx) => {
+  const user = ctx.state?.user;
+  if (!user || user.role !== "leader") return;
+  ctx.session ||= {};
+  ctx.session.await = "team:set-tag";
+  await ctx.reply(
+    "Komanda tagini yuboring (masalan: ZRx). Maksimum 10 belgi. O'chirish uchun \"-\" yuboring:",
+  );
 };
 
 export const startSetLogo = async (ctx) => {
@@ -256,6 +269,19 @@ export const handlePendingTextInput = async (ctx, next) => {
     } else if (awaiting === "team:rename") {
       await updateOwnTeam(ctx.from.id, { name: text });
       await ctx.reply("Nom yangilandi.", { reply_markup: cabinetKeyboard });
+    } else if (awaiting === "team:set-tag") {
+      // "-" clears the tag; otherwise set it (server enforces the 10-char cap too).
+      const tag = text === "-" ? "" : text;
+      if (tag.length > 10) {
+        await ctx.reply("Tag juda uzun (maksimum 10 belgi).", {
+          reply_markup: cabinetKeyboard,
+        });
+        return;
+      }
+      await updateOwnTeam(ctx.from.id, { tag });
+      await ctx.reply(tag ? `🏷 Tag yangilandi: ${tag}` : "🏷 Tag o'chirildi.", {
+        reply_markup: cabinetKeyboard,
+      });
     } else if (awaiting === "settings:contact-username") {
       const username = parseUsername(text);
       if (!username) {
