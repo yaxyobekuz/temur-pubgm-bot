@@ -14,4 +14,7 @@ export const env = Object.freeze({
   BOT_SHARED_SECRET: process.env.BOT_SHARED_SECRET,
   BOT_HTTP_HOST: process.env.BOT_HTTP_HOST || "127.0.0.1",
   BOT_HTTP_PORT: Number(process.env.BOT_HTTP_PORT || 5300),
+  // Ro'yxatdan o'tgach yuboriladigan qo'llanma videosining Telegram file_id'si.
+  // Bo'sh bo'lsa - matnli qo'llanmaga qaytadi.
+  GUIDE_VIDEO_FILE_ID: process.env.GUIDE_VIDEO_FILE_ID || "",
 });

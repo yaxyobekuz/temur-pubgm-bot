@@ -67,7 +67,10 @@ import {
   handlePlaceBack,
   handlePlaceCancel,
 } from "./handlers/placement.handler.js";
-import { handleIdCommand, handleTeamsCommand } from "./handlers/secretGroup.handler.js";
+import {
+  handleIdCommand,
+  handleTeamsCommand,
+} from "./handlers/secretGroup.handler.js";
 import { cleanupJoinLeaveMessages } from "./handlers/groupCleanup.handler.js";
 
 const bot = new Bot(env.BOT_TOKEN);
