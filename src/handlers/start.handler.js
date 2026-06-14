@@ -1,5 +1,11 @@
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
-import { acceptInvite, fetchMe, resendSponsorReminders } from "../services/backend.service.js";
+import {
+  acceptInvite,
+  fetchMe,
+  resendSponsorReminders,
+  resendPlacementNotice,
+} from "../services/backend.service.js";
+import { showPendingPlacement } from "./placement.handler.js";
 import { REGISTER_CONVERSATION } from "./register.handler.js";
 import logger from "../config/logger.js";
 
@@ -65,6 +71,15 @@ const startHandler = async (ctx) => {
     `Xush kelibsiz, ${user.firstName}!\nRolingiz: ${ROLE_LABEL[user.role] || user.role}`,
     { reply_markup: cabinetKeyboard },
   );
+
+  // VIP slot xabari avval yetib bormagan bo'lsa (bot bloklangan/o'chiq edi) - hozir qayta yuboriladi
+  // va joy tanlash oynasi avtomatik ochiladi, foydalanuvchi tugma bosib o'tirmaydi.
+  try {
+    const { resent } = (await resendPlacementNotice(ctx.from.id)) || {};
+    if (resent) await showPendingPlacement(ctx);
+  } catch (err) {
+    logger.warn({ err: err.message }, "resendPlacementNotice failed");
+  }
 };
 
 export default startHandler;

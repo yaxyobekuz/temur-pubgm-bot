@@ -76,6 +76,11 @@ export const getSelfSponsorChannels = (tgId, id) =>
 export const resendSponsorReminders = (tgId) =>
   api.post("/bot/users/sponsor-reminders/resend", { tgId }).then((r) => r.data.data);
 
+// /start: yetkazilmagan VIP slot xabarini qayta yuboradi. { resent } qaytadi - true bo'lsa
+// bot joy tanlash oynasini avtomatik ochadi.
+export const resendPlacementNotice = (tgId) =>
+  api.post("/bot/users/placement-notice/resend", { tgId }).then((r) => r.data.data);
+
 export const registerForTournament = (tgId, id, roster, day, timeSlot) =>
   api
     .post(`/bot/tournaments/${id}/register`, { tgId, roster, day, timeSlot })
