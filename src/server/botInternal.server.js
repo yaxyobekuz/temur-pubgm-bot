@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import { InputFile } from "grammy";
 import { env } from "../config/env.js";
 import logger from "../config/logger.js";
+import { pushPendingPlacement } from "../handlers/placement.handler.js";
 
 // API_BASE_URL "http://host:5000/api" → "http://host:5000". Static fayllar `/api` ostida emas.
 const SERVER_ORIGIN = env.API_BASE_URL.replace(/\/api\/?$/, "");
@@ -106,6 +107,22 @@ export const createBotInternalServer = (bot) => {
       res
         .status(502)
         .json({ success: false, message: err.message || "Send failed" });
+    }
+  });
+
+  // Push the placement picker straight to a leader's chat after an admin grants a VIP slot, so the
+  // flow continues automatically (no "🎟 Bosqich slotini tanlash" tap). Body: { tgId }.
+  app.post("/open-placement", async (req, res) => {
+    const { tgId } = req.body || {};
+    if (!tgId) {
+      return res.status(400).json({ success: false, message: "tgId kerak" });
+    }
+    try {
+      const opened = await pushPendingPlacement(bot.api, Number(tgId));
+      res.json({ success: true, data: { opened } });
+    } catch (err) {
+      logger.warn({ err: err.message, tgId }, "open-placement failed");
+      res.status(502).json({ success: false, message: err.message || "Open failed" });
     }
   });
 

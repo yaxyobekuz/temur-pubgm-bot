@@ -39,7 +39,51 @@ const placeRosterKeyboard = (state) =>
     PLACE_CB,
   );
 
-const getState = (ctx) => ctx.session?.placement || null;
+// Fresh session.placement object from a pending-placement payload.
+const buildPlacementState = (pending) => ({
+  registrationId: pending.registrationId,
+  tournamentTitle: pending.tournament?.title || "Turnir",
+  openSlots: pending.openSlots,
+  needsRoster: pending.needsRoster === true,
+  mode: pending.mode,
+  members: pending.members || [],
+  slots: {},
+  roster: null,
+});
+
+// First step of the flow (roster picker for a brand-new VIP team, otherwise the day picker) as a
+// ready-to-send message. Shared by the in-bot reply and the server-pushed open-placement.
+const firstStepMessage = (state, kind) => {
+  if (state.needsRoster) {
+    return { text: placeRosterText(state), reply_markup: placeRosterKeyboard(state) };
+  }
+  const note = KIND_LABEL[kind] || "keyingi bosqichga o'tdingiz";
+  return {
+    text: `🎟 <b>${state.tournamentTitle}</b> - siz ${note}.\nBo'sh kunni tanlang:`,
+    reply_markup: buildDayPickerKeyboard(state.openSlots, "place"),
+  };
+};
+
+// A pending placement is actionable only when its schedule is ready and slots remain.
+const isPlaceable = (pending) =>
+  pending && pending.scheduleReady !== false && pending.openSlots?.days?.length > 0;
+
+// Session may be empty (server-pushed picker, or the bot restarted mid-flow): rebuild it from the
+// backend on demand so the cascading day/time/roster callbacks keep working without a fresh tap.
+const getState = async (ctx) => {
+  if (ctx.session?.placement) return ctx.session.placement;
+  let pending;
+  try {
+    pending = await fetchPendingPlacement(ctx.from.id);
+  } catch (err) {
+    logger.warn({ err: err.message }, "placement rehydrate failed");
+    return null;
+  }
+  if (!isPlaceable(pending)) return null;
+  ctx.session ||= {};
+  ctx.session.placement = buildPlacementState(pending);
+  return ctx.session.placement;
+};
 
 // "🎟 Bosqich slotini tanlash" - if the team is advanced/VIP-invited, start the cascading
 // day -> time picker; otherwise inform the leader there is nothing to place.
@@ -82,36 +126,31 @@ export const showPendingPlacement = async (ctx) => {
   }
 
   ctx.session ||= {};
-  ctx.session.placement = {
-    registrationId: pending.registrationId,
-    tournamentTitle: pending.tournament?.title || "Turnir",
-    openSlots: pending.openSlots,
-    needsRoster: pending.needsRoster === true,
-    mode: pending.mode,
-    members: pending.members || [],
-    slots: {},
-    roster: null,
-  };
+  ctx.session.placement = buildPlacementState(pending);
+  const msg = firstStepMessage(ctx.session.placement, pending.kind);
+  await ctx.reply(msg.text, { parse_mode: "HTML", reply_markup: msg.reply_markup });
+};
 
-  // Brand-new VIP team has no roster yet - pick it before choosing a day/time slot.
-  if (ctx.session.placement.needsRoster) {
-    await ctx.reply(placeRosterText(ctx.session.placement), {
-      parse_mode: "HTML",
-      reply_markup: placeRosterKeyboard(ctx.session.placement),
-    });
-    return;
+// Server-pushed (ctx-less) variant: after an admin grants a VIP slot, the placement picker is sent
+// straight to the leader's chat so the flow continues automatically. Returns whether it was sent.
+// Subsequent taps rehydrate the session via getState, so no session is set here.
+export const pushPendingPlacement = async (api, chatId) => {
+  let pending;
+  try {
+    pending = await fetchPendingPlacement(chatId);
+  } catch (err) {
+    logger.warn({ err: err.message, chatId }, "pushPendingPlacement fetch failed");
+    return false;
   }
-
-  const note = KIND_LABEL[pending.kind] || "keyingi bosqichga o'tdingiz";
-  await ctx.reply(
-    `🎟 <b>${ctx.session.placement.tournamentTitle}</b> - siz ${note}.\nBo'sh kunni tanlang:`,
-    { parse_mode: "HTML", reply_markup: buildDayPickerKeyboard(pending.openSlots, "place") },
-  );
+  if (!isPlaceable(pending)) return false; // schedule not ready / no slots - leader uses the button
+  const msg = firstStepMessage(buildPlacementState(pending), pending.kind);
+  await api.sendMessage(chatId, msg.text, { parse_mode: "HTML", reply_markup: msg.reply_markup });
+  return true;
 };
 
 // placeslot:<userId> - toggle a member's roster slot (VIP placement only).
 export const handlePlaceSlot = async (ctx) => {
-  const state = getState(ctx);
+  const state = await getState(ctx);
   if (!state?.needsRoster) {
     await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
     return;
@@ -135,7 +174,7 @@ export const handlePlaceSlot = async (ctx) => {
 
 // placeroster:submit - roster done, move to the day picker.
 export const handlePlaceRosterSubmit = async (ctx) => {
-  const state = getState(ctx);
+  const state = await getState(ctx);
   if (!state?.needsRoster) {
     await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
     return;
@@ -157,7 +196,7 @@ export const handlePlaceRosterSubmit = async (ctx) => {
 
 // placeday:<day>
 export const handlePlaceDay = async (ctx) => {
-  const state = getState(ctx);
+  const state = await getState(ctx);
   if (!state) {
     await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
     return;
@@ -171,7 +210,7 @@ export const handlePlaceDay = async (ctx) => {
 
 // placeback - back to the day picker.
 export const handlePlaceBack = async (ctx) => {
-  const state = getState(ctx);
+  const state = await getState(ctx);
   if (!state) {
     await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
     return;
@@ -226,7 +265,7 @@ const attemptPlacement = async (ctx, state) => {
 
 // placetime:<day>:<timeSlot> - finalize placement into the chosen slot.
 export const handlePlaceTime = async (ctx) => {
-  const state = getState(ctx);
+  const state = await getState(ctx);
   if (!state) {
     await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
     return;
@@ -240,7 +279,7 @@ export const handlePlaceTime = async (ctx) => {
 // secretretry:place - leader maxfiy guruhga qo'shilgach bosadi; saqlangan kun/vaqt bilan
 // joy tanlashni qayta urinadi.
 export const handleSecretRetryPlace = async (ctx) => {
-  const state = getState(ctx);
+  const state = await getState(ctx);
   if (!state || state.lastDay == null || state.lastTimeSlot == null) {
     await ctx.answerCallbackQuery({ text: "Sessiya muddati o'tdi", show_alert: true });
     return;
