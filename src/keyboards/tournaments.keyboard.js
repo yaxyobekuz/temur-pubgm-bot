@@ -61,13 +61,39 @@ export const buildRosterPickerKeyboard = (
 };
 
 // Sponsor channel rejection - har bir kanal uchun URL tugma + qayta tekshirish tugmasi.
-// "subcheck" statik - tournamentId/day/timeSlot sessiyadan o'qiladi (callback-data limiti uchun).
-export const buildSponsorChannelsKeyboard = (channels = []) => {
+// `retryCb` statik callback - tegishli ma'lumotlar sessiyadan o'qiladi (callback-data limiti uchun).
+// Default "subcheck" (ro'yxatdan o'tish oqimi); o'yinchi almashtirishda "swapretry" uzatiladi.
+export const buildSponsorChannelsKeyboard = (channels = [], retryCb = "subcheck") => {
   const kb = new InlineKeyboard();
   for (const c of channels) {
     kb.url(c.title || "Kanal", c.url).row();
   }
-  kb.text("🔄 Tekshirish", "subcheck");
+  kb.text("🔄 Tekshirish", retryCb);
+  return kb;
+};
+
+// O'yinchi almashtirish 1-qadam: rosterdagi (hozir o'ynayotgan) o'yinchilardan birini tanlash.
+// Har biri `swapout:<userId>`. roster = [{ userId, name, slot }].
+export const buildSwapOutKeyboard = (roster = []) => {
+  const kb = new InlineKeyboard();
+  for (const r of roster) {
+    const mark = r.slot === "reserve" ? "◌" : "★";
+    kb.text(`${mark} ${r.name}`, `swapout:${r.userId}`).row();
+  }
+  kb.text("❌ Bekor qilish", "swapcancel");
+  return kb;
+};
+
+// O'yinchi almashtirish 2-qadam: rosterda bo'lmagan komanda a'zolaridan o'rinbosarni tanlash.
+// Har biri `swapin:<userId>`. candidates = [{ _id, firstName, lastName, tgUsername }].
+export const buildSwapInKeyboard = (candidates = []) => {
+  const kb = new InlineKeyboard();
+  for (const m of candidates) {
+    const name =
+      [m.firstName, m.lastName].filter(Boolean).join(" ") || m.tgUsername || "O'yinchi";
+    kb.text(name, `swapin:${m._id}`).row();
+  }
+  kb.text("❌ Bekor qilish", "swapcancel");
   return kb;
 };
 
@@ -81,7 +107,8 @@ export const buildSecretGroupKeyboard = (group, retryCb) => {
   return kb;
 };
 
-// "Mening turnirlarim" ostidagi tugmalar: har aktiv turnir uchun homiy-kanal eslatmasini olish.
+// "Mening turnirlarim" ostidagi tugmalar: har aktiv turnir uchun homiy-kanal eslatmasi va
+// o'yinchi almashtirish tugmasi.
 const ACTIVE_TOURNAMENT_STATUSES = ["pending", "ongoing"];
 export const buildMyRegistrationsKeyboard = (registrations = []) => {
   const kb = new InlineKeyboard();
@@ -91,6 +118,7 @@ export const buildMyRegistrationsKeyboard = (registrations = []) => {
     if (r.status !== "registered") continue;
     if (!ACTIVE_TOURNAMENT_STATUSES.includes(t?.status)) continue;
     kb.text(`🔔 ${t.title} - homiy kanallar`, `sponsorinfo:${t._id}`).row();
+    kb.text(`🔄 ${t.title} - o'yinchi almashtirish`, `swap:${r._id}`).row();
     has = true;
   }
   return has ? kb : undefined;

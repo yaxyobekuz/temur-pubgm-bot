@@ -68,6 +68,13 @@ import {
   handlePlaceCancel,
 } from "./handlers/placement.handler.js";
 import {
+  handleSwapStart,
+  handleSwapOut,
+  handleSwapIn,
+  handleSwapRetry,
+  handleSwapCancel,
+} from "./handlers/rosterSwap.handler.js";
+import {
   handleIdCommand,
   handleTeamsCommand,
 } from "./handlers/secretGroup.handler.js";
@@ -87,6 +94,7 @@ bot.use(
       pendingInvite: null,
       roster: null,
       placement: null,
+      swap: null,
       pendingRegisterTournamentId: null,
       sponsorTournamentId: null,
     }),
@@ -140,6 +148,12 @@ bot.callbackQuery(/^kick:/, handleKickCallback);
 bot.callbackQuery(/^tour:/, handleTournamentDetail);
 // "Mening turnirlarim"dan homiy-kanal xabarini olish/qayta tekshirish.
 bot.callbackQuery(/^sponsorinfo:/, handleSponsorInfo);
+// O'yinchi almashtirish ("Mening turnirlarim" -> almashtirish). Specific prefikslar swap: dan oldin.
+bot.callbackQuery(/^swapout:/, handleSwapOut);
+bot.callbackQuery(/^swapin:/, handleSwapIn);
+bot.callbackQuery("swapretry", handleSwapRetry);
+bot.callbackQuery("swapcancel", handleSwapCancel);
+bot.callbackQuery(/^swap:/, handleSwapStart);
 bot.callbackQuery(/^register:/, handleStartRegister);
 bot.callbackQuery("roster:cancel", handleRosterCancel);
 bot.callbackQuery("roster:submit", handleRosterSubmit);
