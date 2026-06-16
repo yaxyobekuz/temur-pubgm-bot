@@ -98,6 +98,18 @@ export const placeIntoStage = (tgId, registrationId, day, timeSlot, roster) =>
     .post(`/bot/registrations/${registrationId}/place`, { tgId, day, timeSlot, roster })
     .then((r) => r.data.data);
 
+// Roster-swap context: current roster players + team members eligible to be swapped in.
+export const fetchRosterForSwap = (tgId, registrationId) =>
+  api
+    .get(`/bot/registrations/${registrationId}/roster`, { params: { tgId } })
+    .then((r) => r.data.data);
+
+// Replace one roster player (outUserId) with another team member (inUserId).
+export const swapRosterMember = (tgId, registrationId, outUserId, inUserId) =>
+  api
+    .post(`/bot/registrations/${registrationId}/swap`, { tgId, outUserId, inUserId })
+    .then((r) => r.data.data);
+
 // --- Secret group ----------------------------------------------------------
 
 // Maxfiy guruh chatId orqali shu guruhga joylashgan jamoalar (slot bilan).
