@@ -14,6 +14,7 @@ import {
   buildTimePickerKeyboard,
 } from "../keyboards/tournaments.keyboard.js";
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
+import { noTeamLeaderKeyboard } from "../keyboards/team.keyboard.js";
 import { sendBannerPhoto } from "./tournaments.handler.js";
 import {
   MODE_ROSTER_SIZE,
@@ -141,6 +142,25 @@ export const handleStartRegister = async (ctx) => {
   }
 
   await ctx.answerCallbackQuery();
+
+  // Leader bo'lsa-yu hali komandasi bo'lmasa (ro'yxatdan o'tishda leader roli darhol
+  // beriladi, komanda esa keyin yaratiladi) - sponsor-gate "komandangiz topilmadi" deb
+  // tushunarsiz xato bermasin. Avval komanda yaratishni taklif qilamiz.
+  let team;
+  try {
+    team = await fetchMyTeam(ctx.from.id);
+  } catch (err) {
+    logger.warn({ err: err.message }, "register team preload failed");
+    await ctx.reply("Ma'lumotlarni yuklab bo'lmadi.", { reply_markup: cabinetKeyboard });
+    return;
+  }
+  if (!team) {
+    await ctx.reply(
+      "Turnirda ro'yxatdan o'tish uchun avval o'z komandangizni yarating.",
+      { reply_markup: noTeamLeaderKeyboard },
+    );
+    return;
+  }
 
   // Aloqa username bo'lmasa - joyida so'rab, kiritgach davom etadi.
   if (!user.contactUsername) {
