@@ -1,4 +1,5 @@
 import { cabinetKeyboard } from "../keyboards/cabinet.keyboard.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 
 const ROLE_LABEL = { leader: "Komanda sardori", player: "O'yinchi" };
 
@@ -13,14 +14,15 @@ export const profileHandler = async (ctx) => {
     return;
   }
   const region = user.region?.name || "-";
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
   const lines = [
-    `👤 *Profil*`,
-    `Ism: ${user.firstName} ${user.lastName || ""}`.trim(),
-    `Rol: ${ROLE_LABEL[user.role] || user.role}`,
-    `Mintaqa: ${region}`,
-    `Telefon: ${user.contactPhone || "-"}`,
+    `👤 <b>Profil</b>`,
+    `Ism: ${escapeHtml(fullName)}`,
+    `Rol: ${escapeHtml(ROLE_LABEL[user.role] || user.role)}`,
+    `Mintaqa: ${escapeHtml(region)}`,
+    `Telefon: ${escapeHtml(user.contactPhone || "-")}`,
   ];
-  await ctx.reply(lines.join("\n"), { parse_mode: "Markdown" });
+  await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
 };
 
 export default showCabinet;

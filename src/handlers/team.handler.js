@@ -16,6 +16,7 @@ import {
   updateContactUsername,
 } from "../services/backend.service.js";
 import { parseUsername } from "../utils/parseUsername.js";
+import { escapeHtml } from "../utils/escapeHtml.js";
 import { fetchAsInputFile } from "../utils/media.js";
 import { completeRegisterContactUsername } from "./registerTournament.handler.js";
 import { env } from "../config/env.js";
@@ -28,15 +29,17 @@ const memberLine = (m, leaderId) => {
     m.username ||
     "O'yinchi";
   const tag = String(m._id) === String(leaderId) ? " 👑" : "";
-  return `• ${name}${tag}`;
+  return `• ${escapeHtml(name)}${tag}`;
 };
 
 const formatTeam = (team) => {
   const leaderId = team.leader?._id || team.leader;
-  const title = team.tag ? `👥 *[${team.tag}] ${team.name}*` : `👥 *${team.name}*`;
+  const title = team.tag
+    ? `👥 <b>[${escapeHtml(team.tag)}] ${escapeHtml(team.name)}</b>`
+    : `👥 <b>${escapeHtml(team.name)}</b>`;
   const lines = [
     title,
-    `🏷 Tag: ${team.tag || "—"}`,
+    `🏷 Tag: ${team.tag ? escapeHtml(team.tag) : "—"}`,
     `A'zolar: ${team.members?.length || 0} / 100`,
     "",
     ...(team.members || []).map((m) => memberLine(m, leaderId)),
@@ -78,7 +81,7 @@ export const showTeam = async (ctx) => {
   const caption = formatTeam(team);
 
   if (team.logo || team.logoFileId) {
-    const photoOpts = { caption, parse_mode: "Markdown", reply_markup: replyMarkup };
+    const photoOpts = { caption, parse_mode: "HTML", reply_markup: replyMarkup };
     // Prefer the cached file_id (instant). If it fails (expired/invalid), fall back to the stored file.
     if (team.logoFileId) {
       try {
@@ -98,7 +101,7 @@ export const showTeam = async (ctx) => {
     }
   }
   await ctx.reply(caption, {
-    parse_mode: "Markdown",
+    parse_mode: "HTML",
     reply_markup: replyMarkup,
   });
 };
