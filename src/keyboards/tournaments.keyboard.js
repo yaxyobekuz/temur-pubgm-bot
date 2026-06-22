@@ -12,14 +12,19 @@ export const buildTournamentsListKeyboard = (tournaments = []) => {
 };
 
 // `canRegister` true bo'lsa "Ro'yxatdan o'tish" tugmasi qo'shiladi (faqat leader uchun).
+// Ro'yxatdan o'tish tugmasi FAQAT turnir "pending" (kutilmoqda) statusida ko'rsatiladi;
+// boshqa statuslarda ro'yxat qabul qilinmaydi.
 // `vipAdminUrl` bo'lsa "VIP slot olish" havola tugmasi ko'rinadi (admin bilan bog'lanish).
 export const buildTournamentDetailKeyboard = (
   tournament,
   { canRegister, alreadyRegistered, vipAdminUrl } = {},
 ) => {
   const kb = new InlineKeyboard();
+  const isPending = tournament.status === "pending";
   if (alreadyRegistered) {
     kb.text("✅ Ro'yxatdasiz", "noop");
+  } else if (!isPending) {
+    kb.text("ℹ️ Ro'yxat qabul qilinmayapti", "noop");
   } else if (canRegister) {
     kb.text("📝 Ro'yxatdan o'tish", `register:${tournament._id}`);
   } else {

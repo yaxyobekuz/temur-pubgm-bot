@@ -141,6 +141,24 @@ export const handleStartRegister = async (ctx) => {
     return;
   }
 
+  // Ro'yxatga olish faqat "pending" (kutilmoqda) statusida ochiq. Eskirgan tugma orqali
+  // boshqa statusda bosilsa ham bu yerda to'xtatamiz (server ham rad etadi).
+  let preTournament;
+  try {
+    preTournament = await getTournamentById(tournamentId);
+  } catch (err) {
+    logger.warn({ err: err.message, tournamentId }, "register status preload failed");
+    await ctx.answerCallbackQuery({ text: "Turnirni yuklab bo'lmadi", show_alert: true });
+    return;
+  }
+  if (preTournament.status !== "pending") {
+    await ctx.answerCallbackQuery({
+      text: "Bu turnir hozir ro'yxat qabul qilmaydi",
+      show_alert: true,
+    });
+    return;
+  }
+
   await ctx.answerCallbackQuery();
 
   // Leader bo'lsa-yu hali komandasi bo'lmasa (ro'yxatdan o'tishda leader roli darhol
